@@ -8,6 +8,8 @@ use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\RetributionController;
 use App\Http\Controllers\TraderController;
 
+Route::redirect('/', '/dashboard');
+
 Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', DashboardController::class)
