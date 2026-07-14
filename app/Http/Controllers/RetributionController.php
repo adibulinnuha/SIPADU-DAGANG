@@ -4,9 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Market;
 use App\Models\Retribution;
-use App\Models\Trader;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class RetributionController extends Controller
 {
@@ -14,15 +12,8 @@ class RetributionController extends Controller
     {
         $markets = Market::orderBy('name')->get();
 
-        $query = Retribution::with(['market', 'trader', 'recorder'])
+        $query = Retribution::with(['market', 'recorder'])
             ->orderByDesc('retribution_date');
-
-        if ($request->filled('search')) {
-            $query->whereHas('trader', function ($builder) use ($request) {
-                $builder->where('name', 'like', '%'.$request->search.'%')
-                    ->orWhere('stall_number', 'like', '%'.$request->search.'%');
-            });
-        }
 
         if ($request->filled('market_id')) {
             $query->where('market_id', $request->market_id);
@@ -36,41 +27,53 @@ class RetributionController extends Controller
             $query->whereDate('retribution_date', '<=', $request->date_end);
         }
 
+        $totalTransactions = (clone $query)->count();
+        $totalAmount = (clone $query)->sum('amount');
+        $totalMarkets = (clone $query)
+            ->distinct('market_id')
+            ->count('market_id');
+
         $retributions = $query->paginate(15)->withQueryString();
 
-        return view('retributions.index', compact('markets', 'retributions'));
+        return view('retributions.index', compact(
+            'markets',
+            'retributions',
+            'totalTransactions',
+            'totalAmount',
+            'totalMarkets'
+        ));
     }
 
     public function create()
     {
         $markets = Market::orderBy('name')->get();
-        $traders = Trader::orderBy('name')->get();
 
-        return view('retributions.create', compact('markets', 'traders'));
+        return view('retributions.create', compact('markets'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'market_id' => 'required|exists:markets,id',
-            'trader_id' => 'required|exists:traders,id',
+            'jenis_retribusi' => 'required|string|max:100',
             'retribution_date' => 'required|date',
             'amount' => 'required|numeric|min:0',
-            'payment_method' => 'required|string|max:255',
+            'payment_method' => 'required|string|max:100',
             'notes' => 'nullable|string',
         ]);
 
         Retribution::create([
             'market_id' => $validated['market_id'],
-            'trader_id' => $validated['trader_id'],
             'recorded_by' => auth()->id(),
+            'jenis_retribusi' => $validated['jenis_retribusi'],
             'retribution_date' => $validated['retribution_date'],
             'amount' => $validated['amount'],
             'payment_method' => $validated['payment_method'],
             'notes' => $validated['notes'] ?? null,
         ]);
 
-        return redirect()->route('retributions.index')
+        return redirect()
+            ->route('retributions.index')
             ->with('success', 'Retribusi berhasil ditambahkan.');
     }
 
@@ -82,25 +85,28 @@ class RetributionController extends Controller
     public function edit(Retribution $retribution)
     {
         $markets = Market::orderBy('name')->get();
-        $traders = Trader::orderBy('name')->get();
 
-        return view('retributions.edit', compact('retribution', 'markets', 'traders'));
+        return view('retributions.edit', compact(
+            'retribution',
+            'markets'
+        ));
     }
 
     public function update(Request $request, Retribution $retribution)
     {
         $validated = $request->validate([
             'market_id' => 'required|exists:markets,id',
-            'trader_id' => 'required|exists:traders,id',
+            'jenis_retribusi' => 'required|string|max:100',
             'retribution_date' => 'required|date',
             'amount' => 'required|numeric|min:0',
-            'payment_method' => 'required|string|max:255',
+            'payment_method' => 'required|string|max:100',
             'notes' => 'nullable|string',
         ]);
 
         $retribution->update($validated);
 
-        return redirect()->route('retributions.index')
+        return redirect()
+            ->route('retributions.index')
             ->with('success', 'Retribusi berhasil diperbarui.');
     }
 
@@ -108,7 +114,8 @@ class RetributionController extends Controller
     {
         $retribution->delete();
 
-        return redirect()->route('retributions.index')
+        return redirect()
+            ->route('retributions.index')
             ->with('success', 'Retribusi berhasil dihapus.');
     }
 }

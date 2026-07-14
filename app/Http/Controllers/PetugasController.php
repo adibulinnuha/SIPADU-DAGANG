@@ -37,21 +37,21 @@ class PetugasController extends Controller
         return redirect()->route('petugas.index');
     }
 
-    public function show(User $petuga)
+    public function show(User $petugas)
     {
-        return redirect()->route('petugas.edit', $petuga);
+        return redirect()->route('petugas.edit', $petugas);
     }
 
-    public function edit(User $petuga)
+    public function edit(User $petugas)
     {
-        return view('petugas.edit', compact('petuga'));
+        return view('petugas.edit', compact('petugas'));
     }
 
-    public function update(Request $request, User $petuga)
+    public function update(Request $request, User $petugas)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $petuga->id,
+            'email' => 'required|email|unique:users,email,' . $petugas->id,
             'password' => 'nullable|string|min:8|confirmed',
         ]);
 
@@ -59,14 +59,14 @@ class PetugasController extends Controller
             unset($validated['password']);
         }
 
-        $petuga->update($validated);
+        $petugas->update($validated);
 
         return redirect()->route('petugas.index');
     }
 
-    public function destroy(User $petuga)
+    public function destroy(User $petugas)
     {
-        $petuga->delete();
+        $petugas->delete();
 
         return redirect()->route('petugas.index');
     }

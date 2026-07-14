@@ -1,110 +1,219 @@
 <x-layouts.app title="Retribusi Harian">
-    <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+
+    <div class="mb-6 flex items-center justify-between">
         <div>
-            <h1 class="text-2xl font-semibold">Retribusi Harian</h1>
-            <p class="text-sm text-slate-500">Daftar retribusi transaksi pedagang.</p>
+            <h1 class="text-3xl font-bold text-slate-900">
+                Retribusi Harian
+            </h1>
+            <p class="text-slate-500">
+                Daftar transaksi retribusi harian.
+            </p>
         </div>
 
-        <a href="{{ route('retributions.create') }}" class="inline-flex items-center rounded bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
-            Tambah Retribusi
+        <a href="{{ route('retributions.create') }}"
+            class="rounded-lg bg-blue-600 px-5 py-3 font-bold text-white shadow hover:bg-blue-700">
+            + Tambah Retribusi
         </a>
     </div>
 
     @if(session('success'))
-        <div class="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        <div class="mb-5 rounded-lg border border-green-300 bg-green-100 p-4 text-green-800">
             {{ session('success') }}
         </div>
     @endif
+    <div class="mb-6 grid gap-4 md:grid-cols-3">
 
-    <div class="mb-6 rounded-lg bg-white p-6 shadow-sm">
-        <form method="GET" action="{{ route('retributions.index') }}" class="grid gap-4 md:grid-cols-4">
-            <div>
-                <label class="block text-sm font-medium text-slate-700">Cari Pedagang</label>
-                <input type="search" name="search" value="{{ request('search') }}" class="mt-2 w-full rounded border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200" placeholder="Nama atau nomor kios">
+    <div class="rounded-xl bg-blue-600 p-5 text-white shadow">
+        <p class="text-sm opacity-80">Total Transaksi</p>
+        <h2 class="mt-2 text-3xl font-bold">
+            {{ number_format($totalTransactions) }}
+        </h2>
+    </div>
+
+    <div class="rounded-xl bg-emerald-600 p-5 text-white shadow">
+        <p class="text-sm opacity-80">Total Nominal</p>
+        <h2 class="mt-2 text-3xl font-bold">
+            Rp {{ number_format($totalAmount,0,',','.') }}
+        </h2>
+    </div>
+
+    <div class="rounded-xl bg-amber-500 p-5 text-white shadow">
+        <p class="text-sm opacity-80">Pasar Menyetor</p>
+        <h2 class="mt-2 text-3xl font-bold">
+            {{ $totalMarkets }}
+        </h2>
+    </div>
+
+</div>
+
+    <div class="mb-6 rounded-lg bg-white p-6 shadow">
+
+        <form method="GET" action="{{ route('retributions.index') }}">
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+
+                <div>
+                    <label class="mb-2 block font-semibold">Pasar</label>
+
+                    <select name="market_id" class="w-full rounded-lg border p-3">
+
+                        <option value="">Semua Pasar</option>
+
+                        @foreach($markets as $market)
+                            <option value="{{ $market->id }}"
+                                {{ request('market_id') == $market->id ? 'selected' : '' }}>
+                                {{ $market->name }}
+                            </option>
+                        @endforeach
+
+                    </select>
+
+                </div>
+
+                <div>
+                    <label class="mb-2 block font-semibold">Tanggal Mulai</label>
+
+                    <input
+                        type="date"
+                        name="date_start"
+                        value="{{ request('date_start') }}"
+                        class="w-full rounded-lg border p-3">
+                </div>
+
+                <div>
+                    <label class="mb-2 block font-semibold">Tanggal Akhir</label>
+
+                    <input
+                        type="date"
+                        name="date_end"
+                        value="{{ request('date_end') }}"
+                        class="w-full rounded-lg border p-3">
+                </div>
+
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-slate-700">Pasar</label>
-                <select name="market_id" class="mt-2 w-full rounded border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
-                    <option value="">Semua Pasar</option>
-                    @foreach($markets as $market)
-                        <option value="{{ $market->id }}" {{ request('market_id') == $market->id ? 'selected' : '' }}>{{ $market->name }}</option>
-                    @endforeach
-                </select>
-            </div>
+            <div class="mt-5 flex justify-end gap-3">
 
-            <div>
-                <label class="block text-sm font-medium text-slate-700">Tanggal Mulai</label>
-                <input type="date" name="date_start" value="{{ request('date_start') }}" class="mt-2 w-full rounded border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-slate-700">Tanggal Akhir</label>
-                <input type="date" name="date_end" value="{{ request('date_end') }}" class="mt-2 w-full rounded border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
-            </div>
-
-            <div class="md:col-span-4 flex justify-end">
-                <button type="submit" class="rounded bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
-                    Terapkan
+                <button
+                    type="submit"
+                    class="rounded-lg bg-blue-600 px-5 py-3 font-bold text-white hover:bg-blue-700">
+                    Filter
                 </button>
-                <a href="{{ route('retributions.index') }}" class="ml-3 rounded border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Reset</a>
+
+                <a
+                    href="{{ route('retributions.index') }}"
+                    class="rounded-lg bg-gray-300 px-5 py-3 font-bold hover:bg-gray-400">
+                    Reset
+                </a>
+
             </div>
+
         </form>
+
     </div>
 
-    <div class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-        <table class="min-w-full divide-y divide-slate-200">
-            <thead class="bg-slate-50 text-left text-sm uppercase tracking-wide text-slate-600">
+    <div class="overflow-hidden rounded-lg bg-white shadow">
+
+        <table class="min-w-full">
+
+            <thead class="bg-slate-900 text-white">
+
                 <tr>
-                    <th class="px-4 py-3">#</th>
-                    <th class="px-4 py-3">Tanggal</th>
-                    <th class="px-4 py-3">Pasar</th>
-                    <th class="px-4 py-3">Pedagang</th>
-                    <th class="px-4 py-3">Jumlah</th>
-                    <th class="px-4 py-3">Metode</th>
-                    <th class="px-4 py-3">Aksi</th>
+
+                    <th class="px-4 py-3 text-left">No</th>
+                    <th class="px-4 py-3 text-left">Tanggal</th>
+                    <th class="px-4 py-3 text-left">Pasar</th>
+                    <th class="px-4 py-3 text-left">Jenis Retribusi</th>
+                    <th class="px-4 py-3 text-right">Nominal</th>
+                    <th class="px-4 py-3 text-left">Metode</th>
+                    <th class="px-4 py-3 text-center">Aksi</th>
+
                 </tr>
+
             </thead>
-            <tbody class="divide-y divide-slate-200 bg-white text-sm text-slate-700">
+
+            <tbody>
+
                 @forelse($retributions as $retribution)
-                    <tr>
-                        <td class="px-4 py-3">{{ $loop->iteration + ($retributions->currentPage() - 1) * $retributions->perPage() }}</td>
-                        <td class="px-4 py-3">{{ $retribution->retribution_date->format('d M Y') }}</td>
-                        <td class="px-4 py-3">{{ $retribution->market->name }}</td>
-                        <td class="px-4 py-3">{{ $retribution->trader->name }}</td>
-                        <td class="px-4 py-3">Rp {{ number_format($retribution->amount, 0, ',', '.') }}</td>
-                        <td class="px-4 py-3">{{ $retribution->payment_method }}</td>
-                        <td class="px-4 py-3 text-right">
-                            <a href="{{ route('retributions.edit', $retribution) }}" class="rounded bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200">Edit</a>
-                            <form action="{{ route('retributions.destroy', $retribution) }}" method="POST" class="inline-block">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" onclick="return confirm('Hapus retribusi ini?')" class="ml-2 rounded bg-red-600 px-3 py-1 text-sm font-semibold text-white hover:bg-red-700">Hapus</button>
-                            </form>
+
+                    <tr class="border-b hover:bg-slate-50">
+
+                        <td class="px-4 py-3">
+                            {{ $retributions->firstItem() + $loop->index }}
                         </td>
+
+                        <td class="px-4 py-3">
+                            {{ $retribution->retribution_date->format('d/m/Y') }}
+                        </td>
+
+                        <td class="px-4 py-3 font-semibold">
+                            {{ $retribution->market?->name }}
+                        </td>
+
+                        <td class="px-4 py-3">
+                            {{ $retribution->jenis_retribusi }}
+                        </td>
+
+                        <td class="px-4 py-3 text-right font-bold text-green-700">
+                            Rp {{ number_format($retribution->amount,0,',','.') }}
+                        </td>
+
+                        <td class="px-4 py-3">
+                            {{ $retribution->payment_method }}
+                        </td>
+
+                        <td class="px-4 py-3">
+
+                            <div class="flex justify-center gap-2">
+
+                                <a
+                                    href="{{ route('retributions.edit', $retribution) }}"
+                                    class="rounded-lg bg-yellow-500 px-3 py-2 text-sm font-semibold text-white hover:bg-yellow-600">
+                                    Edit
+                                </a>
+
+                                <form
+                                    action="{{ route('retributions.destroy', $retribution) }}"
+                                    method="POST"
+                                    onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+
+                                    @csrf
+                                    @method('DELETE')
+
+                                    <button
+                                        type="submit"
+                                        class="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700">
+                                        Hapus
+                                    </button>
+
+                                </form>
+
+                            </div>
+
+                        </td>
+
                     </tr>
+
                 @empty
+
                     <tr>
-                        <td colspan="7" class="px-4 py-6 text-center text-sm text-slate-500">Belum ada data retribusi.</td>
+
+                        <td colspan="7" class="py-10 text-center text-gray-500">
+                            Belum ada data retribusi.
+                        </td>
+
                     </tr>
+
                 @endforelse
+
             </tbody>
+
         </table>
+
     </div>
 
-    <div class="mt-4">
+    <div class="mt-5">
         {{ $retributions->links() }}
-    </div>
-</x-layouts.app>
-
-    <div class="bg-white rounded-lg shadow p-6">
-        <p class="text-lg font-semibold">
-            Modul Retribusi Harian
-        </p>
-
-        <p class="text-gray-500 mt-2">
-            Dalam pengembangan...
-        </p>
     </div>
 
 </x-layouts.app>
