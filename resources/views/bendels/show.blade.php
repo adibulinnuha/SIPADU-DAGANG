@@ -14,7 +14,7 @@
                 </p>
             </div>
 
-            <a href="{{ route('bendels.index') }}"
+            <a href="/bendels"
                class="sipadu-btn sipadu-btn-secondary">
                 Kembali
             </a>
