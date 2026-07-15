@@ -1,0 +1,42 @@
+@props([
+    'label' => null,
+    'name',
+    'type' => 'text',
+    'value' => null,
+    'placeholder' => null,
+    'required' => false,
+])
+
+<div class="space-y-2">
+
+    @if($label)
+        <label for="{{ $name }}" class="block text-sm font-medium text-slate-700">
+            {{ $label }}
+
+            @if($required)
+                <span class="text-red-500">*</span>
+            @endif
+        </label>
+    @endif
+
+
+    <input
+        id="{{ $name }}"
+        name="{{ $name }}"
+        type="{{ $type }}"
+        value="{{ old($name, $value) }}"
+        placeholder="{{ $placeholder }}"
+        @if($required) required @endif
+        {{ $attributes->merge([
+            'class' => 'sipadu-input'
+        ]) }}
+    >
+
+
+    @error($name)
+        <p class="text-sm text-red-600">
+            {{ $message }}
+        </p>
+    @enderror
+
+</div>
