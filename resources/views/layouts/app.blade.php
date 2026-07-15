@@ -100,7 +100,7 @@
 
 
 
-            <a href="{{ route('bendel.index') }}"
+            <a href="{{ route('bendels.index') }}"
                class="rounded-lg px-4 py-3 text-sm hover:bg-slate-800 block">
 
                 Bendel

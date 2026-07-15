@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MarketController;
 use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\RetributionController;
+use App\Http\Controllers\BendelController;
 
 Route::get('/', function () {
     return redirect()->route('dashboard');
@@ -32,11 +33,10 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('retributions', RetributionController::class);
 
+    Route::resource('bendels', BendelController::class);
+
     Route::view('/verifications', 'verifications.index')
         ->name('verifications.index');
-
-    Route::view('/bendel', 'bendel.index')
-        ->name('bendel.index');
 
     Route::view('/reports', 'reports.index')
         ->name('reports.index');
