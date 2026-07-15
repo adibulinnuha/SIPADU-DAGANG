@@ -35,6 +35,9 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('bendels', BendelController::class);
 
+    Route::post('/bendels/generate', [BendelController::class, 'generate'])
+        ->name('bendels.generate');
+
     Route::view('/verifications', 'verifications.index')
         ->name('verifications.index');
 

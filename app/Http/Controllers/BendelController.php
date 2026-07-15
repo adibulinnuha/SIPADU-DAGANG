@@ -31,4 +31,21 @@ class BendelController extends Controller
             ->route('bendels.index')
             ->with('success', 'Bendel berhasil dibuat.');
     }
+
+    public function generate(Request $request, BendelGenerator $generator)
+    {
+        $request->validate([
+            'tanggal_pendapatan' => 'required|date',
+            'tanggal_setor'      => 'required|date',
+        ]);
+
+        $generator->generate(
+            $request->tanggal_pendapatan,
+            $request->tanggal_setor
+        );
+
+        return redirect()
+            ->route('bendels.index')
+            ->with('success', 'Bendel berhasil dibuat.');
+    }
 }
