@@ -25,7 +25,10 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('markets', MarketController::class);
 
-    Route::resource('petugas', PetugasController::class);
+    Route::resource('petugas', PetugasController::class)
+        ->parameters([
+            'petugas' => 'petugas',
+        ]);
 
     Route::resource('retributions', RetributionController::class);
 
