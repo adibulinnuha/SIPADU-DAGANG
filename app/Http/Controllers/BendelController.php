@@ -3,91 +3,32 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bendel;
-use App\Models\Market;
+use App\Services\BendelGenerator;
 use Illuminate\Http\Request;
 
 class BendelController extends Controller
 {
     public function index()
     {
-        $bendels = Bendel::with('market')
-            ->latest()
-            ->paginate(10);
+        $bendels = Bendel::latest()->paginate(10);
 
-        return view('bendels.index', compact('bendels'));
+        return view('bendel.index', compact('bendels'));
     }
 
-
-    public function create()
+    public function store(Request $request, BendelGenerator $generator)
     {
-        $markets = Market::where('is_active', true)
-            ->orderBy('name')
-            ->get();
-
-        return view('bendels.create', compact('markets'));
-    }
-
-
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'market_id' => 'required',
-            'nomor_bendel' => 'required',
-            'tanggal' => 'required|date',
-            'periode' => 'required',
-            'status' => 'required',
-            'keterangan' => 'nullable',
+        $request->validate([
+            'tanggal_pendapatan' => 'required|date',
+            'tanggal_setor'      => 'required|date',
         ]);
 
-        Bendel::create($validated);
+        $generator->generate(
+            $request->tanggal_pendapatan,
+            $request->tanggal_setor
+        );
 
         return redirect()
             ->route('bendels.index')
-            ->with('success', 'Bendel berhasil disimpan.');
-    }
-
-
-    public function show(Bendel $bendel)
-    {
-        return view('bendels.show', compact('bendel'));
-    }
-
-
-    public function edit(Bendel $bendel)
-    {
-        $markets = Market::where('is_active', true)
-            ->orderBy('name')
-            ->get();
-
-        return view('bendels.edit', compact('bendel', 'markets'));
-    }
-
-
-    public function update(Request $request, Bendel $bendel)
-    {
-        $validated = $request->validate([
-            'market_id' => 'required',
-            'nomor_bendel' => 'required',
-            'tanggal' => 'required|date',
-            'periode' => 'required',
-            'status' => 'required',
-            'keterangan' => 'nullable',
-        ]);
-
-        $bendel->update($validated);
-
-        return redirect()
-            ->route('bendels.index')
-            ->with('success', 'Bendel berhasil diperbarui.');
-    }
-
-
-    public function destroy(Bendel $bendel)
-    {
-        $bendel->delete();
-
-        return redirect()
-            ->route('bendels.index')
-            ->with('success', 'Bendel berhasil dihapus.');
+            ->with('success', 'Bendel berhasil dibuat.');
     }
 }
