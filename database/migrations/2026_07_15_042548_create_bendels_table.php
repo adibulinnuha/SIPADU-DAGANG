@@ -9,29 +9,33 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('bendels', function (Blueprint $table) {
+
             $table->id();
 
-            $table->foreignId('market_id')
-                ->constrained()
-                ->cascadeOnDelete();
+            // Tanggal pendapatan seluruh bendel
+            $table->date('tanggal_pendapatan');
 
-            $table->string('nomor_bendel');
+            // Tanggal setor ke bendahara
+            $table->date('tanggal_setor');
 
-            $table->date('tanggal');
-
-            $table->string('periode');
-
-            $table->string('file_path')->nullable();
-
+            // Draft -> Menunggu Nomor -> Selesai -> Arsip
             $table->enum('status', [
                 'draft',
+                'menunggu_nomor',
                 'selesai',
-                'terverifikasi'
+                'arsip'
             ])->default('draft');
+
+            // Operator pembuat bendel
+            $table->foreignId('created_by')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
 
             $table->text('keterangan')->nullable();
 
             $table->timestamps();
+
         });
     }
 

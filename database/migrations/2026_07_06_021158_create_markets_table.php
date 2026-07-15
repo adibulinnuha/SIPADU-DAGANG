@@ -6,27 +6,44 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('markets', function (Blueprint $table) {
+        Schema::create('bendel_documents', function (Blueprint $table) {
+
             $table->id();
-            $table->string('name');
-            $table->string('code')->unique();
-            $table->string('address')->nullable();
-            $table->string('phone')->nullable();
-            $table->boolean('is_active')->default(true);
+
+            $table->foreignId('bendel_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
+            // Retribusi Harian, Kebersihan, Listrik, MCK, dll.
+            $table->string('jenis');
+
+            // H, E, C, D
+            $table->string('kode', 5);
+
+            // Nomor dari Bendahara
+            $table->integer('nomor_register')->nullable();
+
+            // Nomor setor bank
+            $table->string('nomor_setor')->nullable();
+
+            // Total nominal dokumen
+            $table->decimal('nominal', 15, 2)->default(0);
+
+            $table->enum('status', [
+                'draft',
+                'menunggu_nomor',
+                'selesai'
+            ])->default('draft');
+
             $table->timestamps();
+
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('markets');
+        Schema::dropIfExists('bendel_documents');
     }
 };

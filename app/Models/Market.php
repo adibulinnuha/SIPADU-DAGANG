@@ -13,4 +13,9 @@ class Market extends Model
         'phone',
         'is_active',
     ];
+
+    public function bendelItems()
+    {
+        return $this->hasMany(BendelDocumentItem::class);
+    }
 }
