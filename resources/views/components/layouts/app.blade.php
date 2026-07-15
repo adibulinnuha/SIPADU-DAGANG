@@ -1,4 +1,4 @@
-@props(['title' => null])
+@props(['title' => 'SIPADU-DAGANG'])
 
 <!DOCTYPE html>
 <html lang="id">
@@ -7,187 +7,127 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>{{ $title ?? 'SIPADU-DAGANG' }}</title>
+    <title>{{ $title }}</title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
+<body class="bg-slate-100 text-slate-800">
 
-<body class="bg-black-100">
+<div class="min-h-screen flex">
 
+    {{-- Sidebar --}}
+    <aside class="w-72 bg-slate-900 text-white hidden md:flex flex-col">
 
-<div class="flex min-h-screen">
-
-
-    <!-- Sidebar -->
-
-    <aside class="w-64 bg-slate-900 text-white">
-
-
-        <div class="p-5 border-b border-slate-700">
-
-            <h1 class="text-xl font-bold">
+        <div class="px-6 py-5 border-b border-slate-700">
+            <h1 class="text-xl font-bold tracking-wide">
                 SIPADU-DAGANG
             </h1>
-
-            <p class="text-sm text-slate-300">
-                Administrator
+            <p class="text-xs text-slate-400 mt-1">
+                Sistem Informasi Terpadu
             </p>
-
         </div>
 
 
+        <nav class="flex-1 px-4 py-6 space-y-2">
 
-        <nav class="p-4 space-y-2">
-
-
-            <a href="{{ route('dashboard') }}"
-               class="block px-3 py-2 rounded hover:bg-slate-700">
+            <a href="/dashboard"
+               class="block px-4 py-3 rounded-lg hover:bg-slate-800 transition">
                 📊 Dashboard
             </a>
 
-
-            <a href="{{ route('markets.index') }}"
-               class="block px-3 py-2 rounded hover:bg-slate-700">
+            <a href="/markets"
+               class="block px-4 py-3 rounded-lg hover:bg-slate-800 transition">
                 🏪 Master Pasar
             </a>
 
-
-            <a href="{{ route('petugas.index') }}"
-               class="block px-3 py-2 rounded hover:bg-slate-700">
+            <a href="/petugas"
+               class="block px-4 py-3 rounded-lg hover:bg-slate-800 transition">
                 🛠️ Master Petugas
             </a>
 
-
-            <hr class="border-slate-700 my-3">
-
-
-            <a href="{{ route('retributions.index') }}"
-               class="block px-3 py-2 rounded hover:bg-slate-700">
+            <a href="/retributions"
+               class="block px-4 py-3 rounded-lg hover:bg-slate-800 transition">
                 💰 Retribusi Harian
             </a>
 
-
-            <a href="{{ route('verifications.index') }}"
-               class="block px-3 py-2 rounded hover:bg-slate-700">
-                ✔️ Verifikasi Billing
+            <a href="/verifications"
+               class="block px-4 py-3 rounded-lg hover:bg-slate-800 transition">
+                ✔ Verifikasi Billing
             </a>
 
-
-            <a href="{{ route('bendel.index') }}"
-               class="block px-3 py-2 rounded hover:bg-slate-700">
+            <a href="/bendel"
+               class="block px-4 py-3 rounded-lg hover:bg-slate-800 transition">
                 📄 Bendel
             </a>
 
-
-            <a href="{{ route('reports.index') }}"
-               class="block px-3 py-2 rounded hover:bg-slate-700">
+            <a href="/reports"
+               class="block px-4 py-3 rounded-lg hover:bg-slate-800 transition">
                 📈 Laporan & Rekap
             </a>
 
-
-            <a href="{{ route('backup.index') }}"
-               class="block px-3 py-2 rounded hover:bg-slate-700">
+            <a href="/backup"
+               class="block px-4 py-3 rounded-lg hover:bg-slate-800 transition">
                 💾 Backup Data
             </a>
-
-
-            <a href="{{ route('settings.index') }}"
-               class="block px-3 py-2 rounded hover:bg-slate-700">
-                ⚙️ Pengaturan
-            </a>
-
 
         </nav>
 
 
+        <div class="px-6 py-4 border-t border-slate-700 text-sm">
+            <div class="font-semibold">
+                Administrator
+            </div>
 
-        @if(auth()->check())
-
-        <div class="absolute bottom-0 w-64 p-4 border-t border-slate-700">
-
-
-            <form method="POST" action="{{ route('logout') }}">
-
-                @csrf
-
-
-                <button
-                    type="submit"
-                    class="w-full rounded bg-red-600 py-2 hover:bg-red-700">
-
-                    Keluar
-
-                </button>
-
-
-            </form>
-
-
+            <div class="text-slate-400 text-xs">
+                SIPADU-DAGANG
+            </div>
         </div>
-
-        @endif
-
 
     </aside>
 
 
+    {{-- Main Area --}}
+    <main class="flex-1 flex flex-col">
 
+        {{-- Header --}}
+        <header class="bg-white shadow-sm px-6 py-4 flex justify-between items-center">
 
-    <!-- Content -->
+            <div>
+                <h2 class="text-2xl font-bold">
+                    {{ $title }}
+                </h2>
 
-
-    <div class="flex-1">
-
-
-        <header class="bg-white shadow px-6 py-4 flex justify-between">
-
-
-            <h2 class="text-2xl font-bold">
-                {{ $title ?? 'Dashboard' }}
-            </h2>
-
-
-
-            @if(auth()->check())
-
-            <div class="text-right">
-
-                <div class="font-semibold">
-                    {{ auth()->user()->name }}
-                </div>
-
-
-                <div class="text-sm text-gray-500">
-
-                    {{ auth()->user()->role?->label() ?? '-' }}
-
-                </div>
-
-
+                <p class="text-sm text-slate-500">
+                    Dinas Perdagangan Kota Semarang
+                </p>
             </div>
 
-            @endif
 
+            <div class="text-right">
+                <div class="font-semibold">
+                    Administrator
+                </div>
 
+                <div class="text-xs text-slate-500">
+                    Online
+                </div>
+            </div>
 
         </header>
 
 
-
-        <main class="p-6">
+        {{-- Content --}}
+        <section class="p-6">
 
             {{ $slot }}
 
-        </main>
+        </section>
 
 
-
-    </div>
-
+    </main>
 
 </div>
-
 
 </body>
 
