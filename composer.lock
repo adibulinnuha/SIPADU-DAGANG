@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "119732265e6193b1b756a445015d9467",
+    "content-hash": "bf8ef46fb89453106a13f85e5e1825f0",
     "packages": [
         {
             "name": "brick/math",
@@ -7338,6 +7338,67 @@
             "time": "2026-06-26T08:21:49+00:00"
         },
         {
+            "name": "laravel/breeze",
+            "version": "v2.4.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/laravel/breeze.git",
+                "reference": "4f20e7b2cc8d25daa85d8647241a89c8e0930305"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/laravel/breeze/zipball/4f20e7b2cc8d25daa85d8647241a89c8e0930305",
+                "reference": "4f20e7b2cc8d25daa85d8647241a89c8e0930305",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/console": "^11.0|^12.0|^13.0",
+                "illuminate/filesystem": "^11.0|^12.0|^13.0",
+                "illuminate/support": "^11.0|^12.0|^13.0",
+                "illuminate/validation": "^11.0|^12.0|^13.0",
+                "php": "^8.2.0",
+                "symfony/console": "^7.0|^8.0"
+            },
+            "require-dev": {
+                "laravel/framework": "^11.0|^12.0|^13.0",
+                "orchestra/testbench-core": "^9.0|^10.0|^11.0",
+                "phpstan/phpstan": "^2.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Laravel\\Breeze\\BreezeServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Laravel\\Breeze\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Taylor Otwell",
+                    "email": "taylor@laravel.com"
+                }
+            ],
+            "description": "Minimal Laravel authentication scaffolding with Blade and Tailwind.",
+            "keywords": [
+                "auth",
+                "laravel"
+            ],
+            "support": {
+                "issues": "https://github.com/laravel/breeze/issues",
+                "source": "https://github.com/laravel/breeze"
+            },
+            "time": "2026-05-14T16:54:25+00:00"
+        },
+        {
             "name": "laravel/mcp",
             "version": "v0.8.2",
             "source": {
@@ -7946,16 +8007,16 @@
         },
         {
             "name": "pestphp/pest",
-            "version": "v4.7.4",
+            "version": "v4.7.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/pestphp/pest.git",
-                "reference": "ee2e97e932d158faceeaa63a4dc17324b15152cb"
+                "reference": "5dc49a71d63602a9b98fed0f2017c4679ef9f8e0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pestphp/pest/zipball/ee2e97e932d158faceeaa63a4dc17324b15152cb",
-                "reference": "ee2e97e932d158faceeaa63a4dc17324b15152cb",
+                "url": "https://api.github.com/repos/pestphp/pest/zipball/5dc49a71d63602a9b98fed0f2017c4679ef9f8e0",
+                "reference": "5dc49a71d63602a9b98fed0f2017c4679ef9f8e0",
                 "shasum": ""
             },
             "require": {
@@ -7978,11 +8039,11 @@
                 "webmozart/assert": "<1.11.0"
             },
             "require-dev": {
-                "mrpunyapal/peststan": "^0.2.10",
+                "mrpunyapal/peststan": "^0.2.11",
                 "pestphp/pest-dev-tools": "^4.1.0",
                 "pestphp/pest-plugin-browser": "^4.3.1",
                 "pestphp/pest-plugin-type-coverage": "^4.0.4",
-                "psy/psysh": "^0.12.23"
+                "psy/psysh": "^0.12.24"
             },
             "bin": [
                 "bin/pest"
@@ -8049,7 +8110,7 @@
             ],
             "support": {
                 "issues": "https://github.com/pestphp/pest/issues",
-                "source": "https://github.com/pestphp/pest/tree/v4.7.4"
+                "source": "https://github.com/pestphp/pest/tree/v4.7.5"
             },
             "funding": [
                 {
@@ -8061,7 +8122,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-06-25T19:09:05+00:00"
+            "time": "2026-07-06T17:06:29+00:00"
         },
         {
             "name": "pestphp/pest-plugin",
