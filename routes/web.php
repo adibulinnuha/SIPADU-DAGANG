@@ -31,6 +31,10 @@ Route::middleware('auth')->group(function () {
             'petugas' => 'petugas',
         ]);
 
+    // Export harus berada sebelum Route::resource
+    Route::get('/retributions/export', [RetributionController::class, 'export'])
+        ->name('retributions.export');
+
     Route::resource('retributions', RetributionController::class);
 
     Route::resource('bendels', BendelController::class);

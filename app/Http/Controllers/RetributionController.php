@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\RetributionsExport;
 use App\Models\Market;
 use App\Models\Retribution;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class RetributionController extends Controller
 {
@@ -42,6 +44,18 @@ class RetributionController extends Controller
             'totalAmount',
             'totalMarkets'
         ));
+    }
+
+    public function export(Request $request)
+    {
+        return Excel::download(
+            new RetributionsExport(
+                $request->market_id,
+                $request->date_start,
+                $request->date_end
+            ),
+            'Retribusi_' . now()->format('Y-m-d_H-i') . '.xlsx'
+        );
     }
 
     public function create()
