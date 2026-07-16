@@ -6,20 +6,37 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('bendel_documents', function (Blueprint $table) {
+
             $table->id();
+
+            $table->foreignId('bendel_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
+            $table->string('jenis');
+
+            $table->string('kode');
+
+            $table->string('nomor_register')
+                ->nullable();
+
+            $table->string('nomor_setor')
+                ->nullable();
+
+            $table->decimal('nominal', 15, 2)
+                ->default(0);
+
+            $table->string('status')
+                ->default('draft');
+
             $table->timestamps();
+
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('bendel_documents');
