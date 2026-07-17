@@ -15,6 +15,7 @@ class BendelController extends Controller
         return view('bendel.index', compact('bendels'));
     }
 
+
     public function store(Request $request, BendelGenerator $generator)
     {
         $request->validate([
@@ -22,15 +23,18 @@ class BendelController extends Controller
             'tanggal_setor'      => 'required|date',
         ]);
 
+
         $generator->generate(
             $request->tanggal_pendapatan,
             $request->tanggal_setor
         );
 
+
         return redirect()
-            ->route('bendels.index')
+            ->route('bendel.index')
             ->with('success', 'Bendel berhasil dibuat.');
     }
+
 
     public function generate(Request $request, BendelGenerator $generator)
     {
@@ -39,13 +43,15 @@ class BendelController extends Controller
             'tanggal_setor'      => 'required|date',
         ]);
 
+
         $generator->generate(
             $request->tanggal_pendapatan,
             $request->tanggal_setor
         );
 
+
         return redirect()
-            ->route('bendels.index')
+            ->route('bendel.index')
             ->with('success', 'Bendel berhasil dibuat.');
     }
 }
