@@ -12,9 +12,10 @@ use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OcrController;
 
+
 /*
 |--------------------------------------------------------------------------
-| ROUTE OCR (TANPA LOGIN - MODE DEVELOPMENT)
+| ROUTE OCR (DEVELOPMENT)
 |--------------------------------------------------------------------------
 */
 
@@ -23,6 +24,13 @@ Route::get('/ocr', [OcrController::class, 'index'])
 
 Route::post('/ocr/process', [OcrController::class, 'process'])
     ->name('ocr.process');
+
+Route::get('/ocr/review', [OcrController::class, 'review'])
+    ->name('ocr.review');
+
+Route::post('/ocr/store', [OcrController::class, 'store'])
+    ->name('ocr.store');
+
 
 
 /*
@@ -35,47 +43,104 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+
 Route::middleware(['auth'])->group(function () {
 
-    // DASHBOARD
+    /*
+    |--------------------------------------------------------------------------
+    | DASHBOARD
+    |--------------------------------------------------------------------------
+    */
+
     Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
 
-    // MASTER DATA PASAR
+
+    /*
+    |--------------------------------------------------------------------------
+    | MASTER DATA PASAR
+    |--------------------------------------------------------------------------
+    */
+
     Route::resource('markets', MarketController::class);
 
-    // PETUGAS
+
+    /*
+    |--------------------------------------------------------------------------
+    | PETUGAS
+    |--------------------------------------------------------------------------
+    */
+
     Route::resource('petugas', PetugasController::class);
 
-    // RETRIBUSI
+
+    /*
+    |--------------------------------------------------------------------------
+    | RETRIBUSI
+    |--------------------------------------------------------------------------
+    */
+
     Route::get('/retributions/export', [RetributionController::class, 'export'])
         ->name('retributions.export');
 
     Route::resource('retributions', RetributionController::class);
 
-    // REKAP HARIAN
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | REKAP HARIAN
+    |--------------------------------------------------------------------------
+    */
+
     Route::get('/rekap-harian', [RekapHarianController::class, 'index'])
         ->name('rekap-harian.index');
 
-    // BENDEL
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | BENDEL
+    |--------------------------------------------------------------------------
+    */
+
     Route::get('/bendel', [BendelController::class, 'index'])
         ->name('bendel.index');
 
     Route::post('/bendel/generate', [BendelController::class, 'generate'])
         ->name('bendels.generate');
 
-    // VERIFIKASI
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | VERIFIKASI
+    |--------------------------------------------------------------------------
+    */
+
     Route::resource('verifications', VerificationController::class);
 
-    // USER MANAGEMENT
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | USER MANAGEMENT
+    |--------------------------------------------------------------------------
+    */
+
     Route::middleware('role:admin')->group(function () {
+
         Route::resource('users', UserController::class);
+
     });
+
+
 
     Route::get('/admin-test', function () {
         return 'Halo Admin SIPADU-DAGANG';
     })->middleware('role:admin');
 
 });
+
 
 require __DIR__.'/auth.php';

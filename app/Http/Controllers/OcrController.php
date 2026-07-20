@@ -2,74 +2,75 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\GeminiService;
+use App\Models\Market;
+use App\Models\Retribution;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class OcrController extends Controller
 {
-    protected GeminiService $gemini;
-
-    public function __construct(GeminiService $gemini)
+    public function review()
     {
-        $this->gemini = $gemini;
+        // Simulasi hasil OCR sementara
+        // Nanti diganti hasil Gemini/OCR
+
+        $ocrData = [
+            'tanggal' => now()->format('Y-m-d'),
+            'nomor_tiket' => 'ETK-000001',
+            'pasar' => 'KARIMATA 1',
+            'jenis_retribusi' => 'Kios',
+            'nominal' => 5000,
+        ];
+
+        return view('ocr.review', compact('ocrData'));
     }
 
-    public function index()
-    {
-        return view('ocr.index');
-    }
 
-    public function process(Request $request)
+    public function store(Request $request)
     {
-        $request->validate([
-            'image' => 'required|image|mimes:jpg,jpeg,png|max:5120',
+        $validated = $request->validate([
+            'tanggal' => 'required',
+            'nomor_tiket' => 'required',
+            'pasar' => 'required',
+            'jenis_retribusi' => 'required',
+            'nominal' => 'required|numeric',
         ]);
 
-        try {
 
-            $image = $request->file('image');
+        $market = Market::where('name', $validated['pasar'])
+            ->first();
 
-            $mimeType = $image->getMimeType();
 
-            $base64 = base64_encode(file_get_contents($image->getRealPath()));
+        if (!$market) {
 
-            $response = $this->gemini->ocr($base64, $mimeType);
-
-            $text = data_get(
-                $response,
-                'candidates.0.content.parts.0.text'
-            );
-
-            if (!$text) {
-                return back()->withErrors([
-                    'ocr' => 'Gemini tidak mengembalikan hasil OCR.'
+            return back()
+                ->withErrors([
+                    'pasar' => 'Pasar tidak ditemukan di database'
                 ]);
-            }
 
-            // Hilangkan ```json ... ```
-            $text = preg_replace('/```json|```/', '', $text);
-            $text = trim($text);
-
-            $json = json_decode($text, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return back()->withErrors([
-                    'ocr' => 'Hasil OCR bukan JSON yang valid.'
-                ]);
-            }
-
-            return view('ocr.index', [
-                'result' => $json
-            ]);
-
-        } catch (\Throwable $e) {
-
-            Log::error($e);
-
-            return back()->withErrors([
-                'ocr' => $e->getMessage()
-            ]);
         }
+
+
+        Retribution::create([
+
+            'market_id' => $market->id,
+
+            'recorded_by' => auth()->id(),
+
+            'retribution_date' => $validated['tanggal'],
+
+            'jenis_retribusi' => $validated['jenis_retribusi'],
+
+            'amount' => $validated['nominal'],
+
+            'notes' =>
+                'OCR e-Ticketing | ' .
+                'Tiket: ' . $validated['nomor_tiket'],
+
+        ]);
+
+
+        return redirect()
+            ->route('dashboard')
+            ->with('success', 'Transaksi OCR berhasil disimpan');
     }
 }
