@@ -10,6 +10,26 @@ use App\Http\Controllers\RekapHarianController;
 use App\Http\Controllers\BendelController;
 use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\OcrController;
+
+/*
+|--------------------------------------------------------------------------
+| ROUTE OCR (TANPA LOGIN - MODE DEVELOPMENT)
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/ocr', [OcrController::class, 'index'])
+    ->name('ocr.index');
+
+Route::post('/ocr/process', [OcrController::class, 'process'])
+    ->name('ocr.process');
+
+
+/*
+|--------------------------------------------------------------------------
+| ROUTE UTAMA
+|--------------------------------------------------------------------------
+*/
 
 Route::get('/', function () {
     return redirect()->route('login');
