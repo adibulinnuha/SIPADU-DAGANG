@@ -1,6 +1,4 @@
-@extends('layouts.app')
-
-@section('content')
+<x-layouts.app title="OCR Struk e-Ticketing">
 
 <div class="container mx-auto px-4 py-6">
 
@@ -14,9 +12,8 @@
             Upload foto struk untuk membaca data retribusi secara otomatis.
         </p>
 
-
-        <form action="{{ route('ocr.process') }}" 
-              method="POST" 
+        <form action="{{ route('ocr.process') }}"
+              method="POST"
               enctype="multipart/form-data">
 
             @csrf
@@ -35,7 +32,6 @@
 
             </div>
 
-
             <div class="mb-4">
 
                 <img id="preview"
@@ -43,7 +39,6 @@
                      alt="Preview">
 
             </div>
-
 
             <button type="submit"
                     class="bg-blue-600 text-white px-5 py-2 rounded">
@@ -94,17 +89,16 @@
 
         @endif
 
-
     </div>
 
 </div>
 
 
+@push('scripts')
 <script>
 
 const input = document.querySelector('input[name="image"]');
 const preview = document.getElementById('preview');
-
 
 input.addEventListener('change', function(event){
 
@@ -120,6 +114,7 @@ input.addEventListener('change', function(event){
 });
 
 </script>
+@endpush
 
 
-@endsection
+</x-layouts.app>

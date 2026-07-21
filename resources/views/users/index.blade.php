@@ -1,6 +1,4 @@
-@extends('layouts.app')
-
-@section('content')
+<x-layouts.app title="Manajemen User">
 
 <div class="py-12">
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -100,4 +98,4 @@
     </div>
 </div>
 
-@endsection
+</x-layouts.app>
