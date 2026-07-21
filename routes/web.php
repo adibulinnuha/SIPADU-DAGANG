@@ -6,12 +6,12 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MarketController;
 use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\RetributionController;
+use App\Http\Controllers\RetributionsExportController;
 use App\Http\Controllers\RekapHarianController;
 use App\Http\Controllers\BendelController;
 use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OcrController;
-
 
 
 /*
@@ -27,9 +27,7 @@ Route::get('/', function () {
 });
 
 
-
 Route::middleware(['auth'])->group(function () {
-
 
 
     /*
@@ -42,7 +40,6 @@ Route::middleware(['auth'])->group(function () {
         ->name('dashboard');
 
 
-
     /*
     |--------------------------------------------------------------------------
     | OCR e-Ticketing
@@ -52,18 +49,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/ocr', [OcrController::class, 'index'])
         ->name('ocr.index');
 
-
     Route::post('/ocr/process', [OcrController::class, 'process'])
         ->name('ocr.process');
-
 
     Route::get('/ocr/review', [OcrController::class, 'review'])
         ->name('ocr.review');
 
-
     Route::post('/ocr/store', [OcrController::class, 'store'])
         ->name('ocr.store');
-
 
 
     /*
@@ -75,7 +68,6 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('markets', MarketController::class);
 
 
-
     /*
     |--------------------------------------------------------------------------
     | PETUGAS
@@ -85,19 +77,21 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('petugas', PetugasController::class);
 
 
-
     /*
     |--------------------------------------------------------------------------
     | RETRIBUSI
     |--------------------------------------------------------------------------
     */
 
+    Route::get('/retributions/export-template', [RetributionsExportController::class, 'template'])
+        ->name('retributions.export-template');
+
+
     Route::get('/retributions/export', [RetributionController::class, 'export'])
         ->name('retributions.export');
 
 
     Route::resource('retributions', RetributionController::class);
-
 
 
     /*
@@ -114,7 +108,6 @@ Route::middleware(['auth'])->group(function () {
         ->name('rekap-harian.export');
 
 
-
     /*
     |--------------------------------------------------------------------------
     | BENDEL
@@ -129,7 +122,6 @@ Route::middleware(['auth'])->group(function () {
         ->name('bendels.generate');
 
 
-
     /*
     |--------------------------------------------------------------------------
     | VERIFIKASI
@@ -137,7 +129,6 @@ Route::middleware(['auth'])->group(function () {
     */
 
     Route::resource('verifications', VerificationController::class);
-
 
 
     /*
@@ -153,7 +144,6 @@ Route::middleware(['auth'])->group(function () {
     });
 
 
-
     Route::get('/admin-test', function () {
 
         return 'Halo Admin SIPADU-DAGANG';
@@ -162,7 +152,6 @@ Route::middleware(['auth'])->group(function () {
 
 
 });
-
 
 
 require __DIR__.'/auth.php';

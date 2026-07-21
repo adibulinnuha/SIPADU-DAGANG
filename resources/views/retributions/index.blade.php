@@ -1,190 +1,215 @@
-<x-layouts.app title="Retribusi Harian">
+@extends('layouts.app')
 
-    <div class="mb-6 flex items-center justify-between">
+@section('content')
+
+<div class="py-6">
+
+    {{-- HEADER --}}
+    <div class="flex justify-between items-center mb-6">
 
         <div>
-            <h1 class="text-3xl font-bold text-slate-900">
-                Retribusi Harian
+            <h1 class="text-2xl font-bold text-gray-800">
+                Data Retribusi
             </h1>
 
-            <p class="mt-1 text-slate-500">
-                Monitoring transaksi retribusi pasar SIPADU-DAGANG.
+            <p class="text-sm text-gray-500">
+                Pengelolaan transaksi retribusi SIPADU-DAGANG
             </p>
         </div>
 
-        <div class="flex items-center gap-3">
-            <a href="{{ route('retributions.export', request()->query()) }}"
-               class="flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-3 font-semibold text-white shadow hover:bg-emerald-700">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Export Excel
+
+        <div class="flex gap-2">
+
+            <a href="{{ route('retributions.export-template') }}"
+               class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                Download ERET JULI
             </a>
+
 
             <a href="{{ route('retributions.create') }}"
-               class="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white shadow hover:bg-blue-700">
+               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                 + Tambah Retribusi
             </a>
-        </div>
 
-    </div>
-
-
-    {{-- Statistik --}}
-
-    <div class="mb-6 grid gap-6 md:grid-cols-3">
-
-        <div class="rounded-xl bg-white p-6 shadow">
-            <p class="text-sm text-slate-500">
-                Total Transaksi
-            </p>
-
-            <h2 class="mt-2 text-3xl font-bold text-slate-900">
-                {{ $totalTransactions }}
-            </h2>
-        </div>
-
-
-        <div class="rounded-xl bg-white p-6 shadow">
-            <p class="text-sm text-slate-500">
-                Total Pendapatan
-            </p>
-
-            <h2 class="mt-2 text-3xl font-bold text-emerald-600">
-                Rp {{ number_format($totalAmount,0,',','.') }}
-            </h2>
-        </div>
-
-
-        <div class="rounded-xl bg-white p-6 shadow">
-            <p class="text-sm text-slate-500">
-                Jumlah Pasar
-            </p>
-
-            <h2 class="mt-2 text-3xl font-bold text-blue-600">
-                {{ $totalMarkets }}
-            </h2>
         </div>
 
     </div>
 
 
 
-    {{-- Filter --}}
+    {{-- FLASH MESSAGE --}}
+    @if(session('success'))
 
-    <div class="mb-6 rounded-xl bg-white p-6 shadow">
+        <div class="mb-5 p-4 rounded-lg bg-green-100 text-green-700">
+            {{ session('success') }}
+        </div>
 
-        <form method="GET" action="{{ route('retributions.index') }}"
-              class="grid gap-4 md:grid-cols-4">
+    @endif
 
 
-            <div>
-                <label class="mb-1 block text-sm font-semibold text-slate-700">
-                    Pasar
-                </label>
 
-                <select name="market_id"
-                    class="w-full rounded-lg border-slate-300">
+    {{-- STATISTIK --}}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
 
-                    <option value="">
-                        Semua Pasar
-                    </option>
 
-                    @foreach($markets as $market)
+        <div class="bg-white shadow rounded-xl p-5">
+            <p class="text-sm text-gray-500">
+                Total Retribusi
+            </p>
 
-                    <option value="{{ $market->id }}"
-                        @selected(request('market_id') == $market->id)>
-                        {{ $market->name }}
-                    </option>
+            <h2 class="text-3xl font-bold text-gray-800">
+                {{ $retributions->total() }}
+            </h2>
+        </div>
 
-                    @endforeach
 
-                </select>
+
+        <div class="bg-white shadow rounded-xl p-5">
+            <p class="text-sm text-gray-500">
+                Hari Ini
+            </p>
+
+            <h2 class="text-3xl font-bold text-blue-600">
+                {{ $todayRetributionCount ?? 0 }}
+            </h2>
+        </div>
+
+
+
+        <div class="bg-white shadow rounded-xl p-5">
+            <p class="text-sm text-gray-500">
+                Total Nominal
+            </p>
+
+            <h2 class="text-3xl font-bold text-green-600">
+                Rp {{ number_format($totalAmount ?? 0,0,',','.') }}
+            </h2>
+        </div>
+
+
+    </div>
+
+
+
+
+    {{-- FILTER --}}
+    <div class="bg-white shadow rounded-xl p-5 mb-6">
+
+
+        <form method="GET" action="{{ route('retributions.index') }}">
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+
+                <div>
+
+                    <label class="text-sm text-gray-600">
+                        Pasar
+                    </label>
+
+                    <select name="market_id"
+                        class="w-full rounded-lg border-gray-300">
+
+                        <option value="">
+                            Semua Pasar
+                        </option>
+
+                        @foreach($markets as $market)
+
+                        <option value="{{ $market->id }}"
+                        @selected(request('market_id')==$market->id)>
+
+                            {{ $market->name }}
+
+                        </option>
+
+                        @endforeach
+
+                    </select>
+
+                </div>
+
+
+
+                <div>
+
+                    <label class="text-sm text-gray-600">
+                        Dari Tanggal
+                    </label>
+
+                    <input type="date"
+                    name="start_date"
+                    value="{{ request('start_date') }}"
+                    class="w-full rounded-lg border-gray-300">
+
+                </div>
+
+
+
+                <div>
+
+                    <label class="text-sm text-gray-600">
+                        Sampai Tanggal
+                    </label>
+
+                    <input type="date"
+                    name="end_date"
+                    value="{{ request('end_date') }}"
+                    class="w-full rounded-lg border-gray-300">
+
+                </div>
+
+
+
+                <div class="flex items-end gap-2">
+
+                    <button
+                    class="px-4 py-2 bg-gray-800 text-white rounded-lg">
+                        Filter
+                    </button>
+
+
+                    <a href="{{ route('retributions.index') }}"
+                    class="px-4 py-2 bg-gray-200 rounded-lg">
+                        Reset
+                    </a>
+
+                </div>
+
 
             </div>
-
-
-            <div>
-                <label class="mb-1 block text-sm font-semibold">
-                    Dari Tanggal
-                </label>
-
-                <input type="date"
-                       name="date_start"
-                       value="{{ request('date_start') }}"
-                       class="w-full rounded-lg border-slate-300">
-            </div>
-
-
-            <div>
-                <label class="mb-1 block text-sm font-semibold">
-                    Sampai Tanggal
-                </label>
-
-                <input type="date"
-                       name="date_end"
-                       value="{{ request('date_end') }}"
-                       class="w-full rounded-lg border-slate-300">
-            </div>
-
-
-            <div class="flex items-end gap-2">
-
-                <button
-                    class="rounded-lg bg-blue-600 px-5 py-2 text-white hover:bg-blue-700">
-                    Cari
-                </button>
-
-                <a href="{{ route('retributions.index') }}"
-                   class="rounded-lg bg-slate-200 px-5 py-2 text-slate-700">
-                    Reset
-                </a>
-
-                <a href="{{ route('retributions.export', request()->query()) }}"
-                   class="flex items-center gap-1 rounded-lg bg-emerald-600 px-5 py-2 text-white hover:bg-emerald-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Export Excel
-                </a>
-
-            </div>
-
 
         </form>
 
+
     </div>
 
 
 
-    {{-- Tabel --}}
 
-    <div class="overflow-hidden rounded-xl bg-white shadow">
-
-        <table class="min-w-full divide-y divide-slate-200">
+    {{-- TABLE --}}
+    <div class="bg-white shadow rounded-xl overflow-hidden">
 
 
-            <thead class="bg-slate-100">
+        <table class="w-full text-sm">
+
+            <thead class="bg-gray-100">
 
                 <tr>
 
-                    <th class="px-6 py-3 text-left text-sm font-semibold">
-                        No
-                    </th>
-
-                    <th class="px-6 py-3 text-left text-sm font-semibold">
+                    <th class="px-5 py-3 text-left">
                         Tanggal
                     </th>
 
-                    <th class="px-6 py-3 text-left text-sm font-semibold">
+                    <th class="px-5 py-3 text-left">
                         Pasar
                     </th>
 
-                    <th class="px-6 py-3 text-left text-sm font-semibold">
+                    <th class="px-5 py-3 text-left">
                         Jenis
                     </th>
 
-                    <th class="px-6 py-3 text-left text-sm font-semibold">
+                    <th class="px-5 py-3 text-right">
                         Nominal
                     </th>
 
@@ -193,34 +218,29 @@
             </thead>
 
 
-            <tbody class="divide-y divide-slate-100">
+            <tbody>
 
 
             @forelse($retributions as $item)
 
-                <tr class="hover:bg-slate-50">
+                <tr class="border-t">
 
-                    <td class="px-6 py-4">
-                        {{ $loop->iteration }}
-                    </td>
-
-
-                    <td class="px-6 py-4">
+                    <td class="px-5 py-3">
                         {{ $item->retribution_date }}
                     </td>
 
 
-                    <td class="px-6 py-4">
+                    <td class="px-5 py-3">
                         {{ $item->market->name ?? '-' }}
                     </td>
 
 
-                    <td class="px-6 py-4">
+                    <td class="px-5 py-3">
                         {{ $item->jenis_retribusi }}
                     </td>
 
 
-                    <td class="px-6 py-4 font-semibold">
+                    <td class="px-5 py-3 text-right">
                         Rp {{ number_format($item->amount,0,',','.') }}
                     </td>
 
@@ -232,10 +252,10 @@
 
                 <tr>
 
-                    <td colspan="5"
-                        class="px-6 py-10 text-center text-slate-500">
+                    <td colspan="4"
+                    class="px-5 py-5 text-center text-gray-500">
 
-                        Belum ada transaksi retribusi.
+                        Belum ada data retribusi
 
                     </td>
 
@@ -247,7 +267,6 @@
 
             </tbody>
 
-
         </table>
 
 
@@ -255,8 +274,13 @@
 
 
     <div class="mt-5">
+
         {{ $retributions->links() }}
+
     </div>
 
 
-</x-layouts.app>
+</div>
+
+
+@endsection
