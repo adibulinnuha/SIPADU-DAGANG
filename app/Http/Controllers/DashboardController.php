@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Bendel;
 use App\Models\Market;
 use App\Models\Retribution;
-use App\Models\Verification;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -20,6 +18,7 @@ class DashboardController extends Controller
             'retribution_date',
             $today
         )->count();
+
 
         $todayRetributionTotal = Retribution::whereDate(
             'retribution_date',
@@ -59,6 +58,37 @@ class DashboardController extends Controller
             ->get();
 
 
+        // Grafik Pendapatan 7 Hari
+
+        $dailyRevenue = Retribution::selectRaw(
+                'DATE(retribution_date) as date, SUM(amount) as total'
+            )
+            ->where(
+                'retribution_date',
+                '>=',
+                now()->subDays(6)->startOfDay()
+            )
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+
+        $chartLabels = [];
+        $chartValues = [];
+
+
+        foreach ($dailyRevenue as $item) {
+
+            $chartLabels[] = date(
+                'd M',
+                strtotime($item->date)
+            );
+
+            $chartValues[] = (int) $item->total;
+
+        }
+
+
         return view('dashboard', compact(
             'marketCount',
             'todayRetributionCount',
@@ -66,7 +96,9 @@ class DashboardController extends Controller
             'monthRetributionTotal',
             'topMarkets',
             'notSubmittedMarkets',
-            'recentTransactions'
+            'recentTransactions',
+            'chartLabels',
+            'chartValues'
         ));
     }
 }

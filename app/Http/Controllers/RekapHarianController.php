@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Retribution;
+use App\Exports\RekapHarianExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class RekapHarianController extends Controller
 {
@@ -33,5 +35,20 @@ class RekapHarianController extends Controller
             'grandTotal',
             'grandTransaksi'
         ));
+    }
+
+
+    public function export(Request $request)
+    {
+        $tanggal = $request->input(
+            'tanggal',
+            now()->toDateString()
+        );
+
+
+        return Excel::download(
+            new RekapHarianExport($tanggal),
+            'rekap-harian-'.$tanggal.'.xlsx'
+        );
     }
 }

@@ -1,136 +1,144 @@
-<x-app-layout>
+<x-layouts.app title="Review OCR e-Ticketing">
 
-<div class="max-w-5xl mx-auto p-6">
-
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-
-        <div class="px-6 py-4 border-b">
-            <h2 class="text-xl font-semibold text-gray-800">
-                Review Hasil OCR e-Ticketing
-            </h2>
-            <p class="text-sm text-gray-500 mt-1">
-                Periksa data hasil pembacaan struk sebelum disimpan ke transaksi retribusi.
-            </p>
-        </div>
+<div class="space-y-6">
 
 
-        <form action="{{ route('ocr.store') }}" method="POST" class="p-6">
+    <div class="rounded-2xl bg-gradient-to-r from-blue-700 to-purple-600 p-6 text-white shadow">
+
+        <h1 class="text-2xl font-bold">
+            Review Hasil OCR
+        </h1>
+
+        <p class="mt-2 text-blue-100">
+            Periksa dan koreksi data sebelum masuk sistem retribusi.
+        </p>
+
+    </div>
+
+
+
+    <div class="rounded-2xl border bg-white p-6 shadow-sm">
+
+
+        <form action="{{ route('ocr.store') }}"
+              method="POST">
+
             @csrf
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+
+            <div class="grid gap-5 md:grid-cols-2">
 
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">
+
+                    <label class="font-semibold">
+                        Nomor Setor
+                    </label>
+
+                    <input type="text"
+                           name="nomor_setor"
+                           value="{{ $ocr['nomor_setor'] ?? '' }}"
+                           class="mt-2 w-full rounded-lg border p-3">
+
+                </div>
+
+
+
+                <div>
+
+                    <label class="font-semibold">
                         Tanggal
                     </label>
 
                     <input type="date"
                            name="tanggal"
-                           value="{{ $ocrData['tanggal'] }}"
-                           class="mt-1 w-full rounded-lg border-gray-300">
+                           value="{{ $ocr['tanggal'] ?? '' }}"
+                           class="mt-2 w-full rounded-lg border p-3">
+
                 </div>
 
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">
-                        Nomor Tiket
-                    </label>
-
-                    <input type="text"
-                           name="nomor_tiket"
-                           value="{{ $ocrData['nomor_tiket'] }}"
-                           class="mt-1 w-full rounded-lg border-gray-300">
-                </div>
-
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">
+
+                    <label class="font-semibold">
                         Pasar
                     </label>
 
                     <input type="text"
                            name="pasar"
-                           value="{{ $ocrData['pasar'] }}"
-                           class="mt-1 w-full rounded-lg border-gray-300">
+                           value="{{ $ocr['pasar'] ?? '' }}"
+                           class="mt-2 w-full rounded-lg border p-3">
+
                 </div>
 
 
+
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">
+
+                    <label class="font-semibold">
                         Jenis Retribusi
                     </label>
 
-                    <select name="jenis_retribusi"
-                            class="mt-1 w-full rounded-lg border-gray-300">
+                    <input type="text"
+                           name="jenis_retribusi"
+                           value="{{ $ocr['jenis_retribusi'] ?? '' }}"
+                           class="mt-2 w-full rounded-lg border p-3">
 
-                        <option value="">
-                            Pilih Jenis
-                        </option>
-
-                        <option value="Kios">
-                            Kios
-                        </option>
-
-                        <option value="Los">
-                            Los
-                        </option>
-
-                        <option value="Dasaran Terbuka">
-                            Dasaran Terbuka
-                        </option>
-
-                        <option value="MCK">
-                            MCK
-                        </option>
-
-                        <option value="Kebersihan">
-                            Kebersihan
-                        </option>
-
-                        <option value="Listrik">
-                            Listrik
-                        </option>
-
-                    </select>
                 </div>
 
 
+
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">
+
+                    <label class="font-semibold">
                         Nominal
                     </label>
 
                     <input type="number"
                            name="nominal"
-                           value="{{ $ocrData['nominal'] }}"
-                           class="mt-1 w-full rounded-lg border-gray-300">
+                           value="{{ $ocr['nominal'] ?? '' }}"
+                           class="mt-2 w-full rounded-lg border p-3">
+
                 </div>
+
 
 
             </div>
 
 
-            <div class="mt-6 flex justify-end gap-3">
 
-                <a href="{{ route('dashboard') }}"
-                   class="px-4 py-2 rounded-lg border">
-                    Batal
-                </a>
+            <div class="mt-6 flex gap-3">
 
 
                 <button type="submit"
-                        class="px-4 py-2 rounded-lg bg-blue-600 text-white">
-                    Simpan Transaksi
+                        class="rounded-lg bg-emerald-600 px-6 py-3 text-white">
+
+                    Simpan Retribusi
+
                 </button>
+
+
+
+                <a href="{{ route('ocr.index') }}"
+                   class="rounded-lg bg-slate-600 px-6 py-3 text-white">
+
+                    Kembali
+
+                </a>
+
 
             </div>
 
 
         </form>
 
+
     </div>
+
 
 </div>
 
-</x-app-layout>
+
+</x-layouts.app>
