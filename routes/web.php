@@ -1,18 +1,16 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\BendelController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MarketController;
+use App\Http\Controllers\OcrController;
 use App\Http\Controllers\PetugasController;
+use App\Http\Controllers\RekapHarianController;
 use App\Http\Controllers\RetributionController;
 use App\Http\Controllers\RetributionsExportController;
-use App\Http\Controllers\RekapHarianController;
-use App\Http\Controllers\BendelController;
-use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\OcrController;
-
+use App\Http\Controllers\VerificationController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,9 +24,7 @@ Route::get('/', function () {
 
 });
 
-
 Route::middleware(['auth'])->group(function () {
-
 
     /*
     |--------------------------------------------------------------------------
@@ -38,7 +34,6 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
-
 
     /*
     |--------------------------------------------------------------------------
@@ -58,7 +53,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/ocr/store', [OcrController::class, 'store'])
         ->name('ocr.store');
 
-
     /*
     |--------------------------------------------------------------------------
     | MASTER DATA PASAR
@@ -67,7 +61,6 @@ Route::middleware(['auth'])->group(function () {
 
     Route::resource('markets', MarketController::class);
 
-
     /*
     |--------------------------------------------------------------------------
     | PETUGAS
@@ -75,7 +68,6 @@ Route::middleware(['auth'])->group(function () {
     */
 
     Route::resource('petugas', PetugasController::class);
-
 
     /*
     |--------------------------------------------------------------------------
@@ -86,13 +78,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/retributions/export-template', [RetributionsExportController::class, 'template'])
         ->name('retributions.export-template');
 
-
     Route::get('/retributions/export', [RetributionController::class, 'export'])
         ->name('retributions.export');
 
-
     Route::resource('retributions', RetributionController::class);
-
 
     /*
     |--------------------------------------------------------------------------
@@ -103,10 +92,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/rekap-harian', [RekapHarianController::class, 'index'])
         ->name('rekap-harian.index');
 
-
     Route::get('/rekap-harian/export', [RekapHarianController::class, 'export'])
         ->name('rekap-harian.export');
-
 
     /*
     |--------------------------------------------------------------------------
@@ -117,10 +104,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/bendel', [BendelController::class, 'index'])
         ->name('bendel.index');
 
-
     Route::post('/bendel/generate', [BendelController::class, 'generate'])
         ->name('bendels.generate');
-
 
     /*
     |--------------------------------------------------------------------------
@@ -129,7 +114,6 @@ Route::middleware(['auth'])->group(function () {
     */
 
     Route::resource('verifications', VerificationController::class);
-
 
     /*
     |--------------------------------------------------------------------------
@@ -143,15 +127,12 @@ Route::middleware(['auth'])->group(function () {
 
     });
 
-
     Route::get('/admin-test', function () {
 
         return 'Halo Admin SIPADU-DAGANG';
 
     })->middleware('role:admin');
 
-
 });
-
 
 require __DIR__.'/auth.php';

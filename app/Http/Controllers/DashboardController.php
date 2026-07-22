@@ -19,12 +19,10 @@ class DashboardController extends Controller
             $today
         )->count();
 
-
         $todayRetributionTotal = Retribution::whereDate(
             'retribution_date',
             $today
         )->sum('amount');
-
 
         $monthRetributionTotal = Retribution::where(
             'retribution_date',
@@ -32,16 +30,14 @@ class DashboardController extends Controller
             now()->startOfMonth()
         )->sum('amount');
 
-
         $topMarkets = Retribution::selectRaw(
-                'market_id, SUM(amount) as total'
-            )
+            'market_id, SUM(amount) as total'
+        )
             ->groupBy('market_id')
             ->orderByDesc('total')
             ->limit(5)
             ->with('market')
             ->get();
-
 
         $notSubmittedMarkets = Market::whereNotIn(
             'id',
@@ -51,18 +47,16 @@ class DashboardController extends Controller
             )->pluck('market_id')
         )->get();
 
-
         $recentTransactions = Retribution::latest()
             ->with('market')
             ->limit(10)
             ->get();
 
-
         // Grafik Pendapatan 7 Hari
 
         $dailyRevenue = Retribution::selectRaw(
-                'DATE(retribution_date) as date, SUM(amount) as total'
-            )
+            'DATE(retribution_date) as date, SUM(amount) as total'
+        )
             ->where(
                 'retribution_date',
                 '>=',
@@ -72,10 +66,8 @@ class DashboardController extends Controller
             ->orderBy('date')
             ->get();
 
-
         $chartLabels = [];
         $chartValues = [];
-
 
         foreach ($dailyRevenue as $item) {
 
@@ -87,7 +79,6 @@ class DashboardController extends Controller
             $chartValues[] = (int) $item->total;
 
         }
-
 
         return view('dashboard', compact(
             'marketCount',

@@ -34,15 +34,13 @@ return new class extends Migration
 
             $table->timestamps();
 
-
             $table->index([
                 'market_id',
-                'retribution_date'
+                'retribution_date',
             ]);
 
         });
     }
-
 
     public function down(): void
     {

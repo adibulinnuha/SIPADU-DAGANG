@@ -11,8 +11,7 @@ class RetributionsExportController extends Controller
 {
     public function __construct(
         protected EretTemplateService $eretTemplateService
-    ) {
-    }
+    ) {}
 
     public function template(Request $request): BinaryFileResponse
     {
@@ -25,9 +24,9 @@ class RetributionsExportController extends Controller
             $date
         );
 
-        $fileName = 'ERET_' . now()->format('Ymd_His') . '.xlsx';
+        $fileName = 'ERET_'.now()->format('Ymd_His').'.xlsx';
 
-        $tempFile = storage_path('app/temp/' . $fileName);
+        $tempFile = storage_path('app/temp/'.$fileName);
 
         if (! is_dir(dirname($tempFile))) {
             mkdir(dirname($tempFile), 0755, true);

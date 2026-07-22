@@ -23,7 +23,7 @@ return new class extends Migration
                 'draft',
                 'menunggu_nomor',
                 'selesai',
-                'arsip'
+                'arsip',
             ])->default('draft');
 
             // Operator pembuat bendel

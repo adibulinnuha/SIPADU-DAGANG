@@ -54,7 +54,7 @@ class RetributionController extends Controller
                 $request->date_start,
                 $request->date_end
             ),
-            'Retribusi_' . now()->format('Y-m-d_H-i') . '.xlsx'
+            'Retribusi_'.now()->format('Y-m-d_H-i').'.xlsx'
         );
     }
 

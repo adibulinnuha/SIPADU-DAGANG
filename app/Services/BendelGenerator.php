@@ -29,18 +29,15 @@ class BendelGenerator
                 'keterangan' => 'Generate otomatis SIPADU-DAGANG',
             ]);
 
-
             $verifications = Verification::with([
-                    'retribution.market'
-                ])
+                'retribution.market',
+            ])
                 ->where('status', 'Terverifikasi')
                 ->get();
-
 
             if ($verifications->isEmpty()) {
                 return $bendel;
             }
-
 
             $document = BendelDocument::create([
                 'bendel_id' => $bendel->id,
@@ -50,19 +47,15 @@ class BendelGenerator
                 'nominal' => 0,
             ]);
 
-
             $total = 0;
-
 
             foreach ($verifications as $verification) {
 
                 $retribution = $verification->retribution;
 
-
-                if (!$retribution) {
+                if (! $retribution) {
                     continue;
                 }
-
 
                 BendelDocumentItem::create([
                     'bendel_document_id' => $document->id,
@@ -72,15 +65,12 @@ class BendelGenerator
                     'nominal' => $retribution->amount,
                 ]);
 
-
                 $total += $retribution->amount;
             }
-
 
             $document->update([
                 'nominal' => $total,
             ]);
-
 
             return $bendel;
 

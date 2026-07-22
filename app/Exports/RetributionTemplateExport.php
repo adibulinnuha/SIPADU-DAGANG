@@ -4,33 +4,26 @@ namespace App\Exports;
 
 use App\Models\Retribution;
 use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
 class RetributionTemplateExport
 {
-
     public function generate()
     {
         $template = storage_path(
             'app/templates/ERET JULI.xltx'
         );
 
-
         $spreadsheet = IOFactory::load($template);
-
 
         $sheet = $spreadsheet->getActiveSheet();
 
-
         $date = now()->format('d F Y');
-
 
         // tanggal
         $sheet->setCellValue(
             'A1',
             'Tanggal '.$date
         );
-
 
         $data = Retribution::with('market')
             ->whereDate(
@@ -39,20 +32,17 @@ class RetributionTemplateExport
             )
             ->get();
 
-
-
         /*
         Mapping sementara:
-        
+
         Excel:
         Kios = B
         Los = C
         DT = D
         Kebersihan = E
         Total = F
-        
-        */
 
+        */
 
         $rowMapping = [
 
@@ -72,41 +62,34 @@ class RetributionTemplateExport
 
         ];
 
-
-
-        foreach($data as $item)
-        {
+        foreach ($data as $item) {
 
             $market = strtoupper(
                 $item->market->name
             );
 
-
-            if(!isset($rowMapping[$market])){
+            if (! isset($rowMapping[$market])) {
                 continue;
             }
 
-
             $row = $rowMapping[$market];
 
-
-            switch($item->jenis_retribusi)
-            {
+            switch ($item->jenis_retribusi) {
 
                 case 'Kios':
-                    $col='B';
+                    $col = 'B';
                     break;
 
                 case 'Los':
-                    $col='C';
+                    $col = 'C';
                     break;
 
                 case 'Dasaran Terbuka':
-                    $col='D';
+                    $col = 'D';
                     break;
 
                 case 'Kebersihan':
-                    $col='E';
+                    $col = 'E';
                     break;
 
                 default:
@@ -114,32 +97,25 @@ class RetributionTemplateExport
 
             }
 
-
-
             $old = $sheet->getCell(
                 $col.$row
             )->getValue();
 
-
             $old = is_numeric($old)
                 ? $old
                 : 0;
-
 
             $sheet->setCellValue(
                 $col.$row,
                 $old + $item->amount
             );
 
-
-
             // Total kolom F
 
             $total = 0;
 
-            foreach(['B','C','D','E'] as $c)
-            {
-                $value=$sheet->getCell(
+            foreach (['B', 'C', 'D', 'E'] as $c) {
+                $value = $sheet->getCell(
                     $c.$row
                 )->getValue();
 
@@ -148,7 +124,6 @@ class RetributionTemplateExport
                     : 0;
             }
 
-
             $sheet->setCellValue(
                 'F'.$row,
                 $total
@@ -156,10 +131,7 @@ class RetributionTemplateExport
 
         }
 
-
-
         return $spreadsheet;
 
     }
-
 }

@@ -20,54 +20,55 @@ class MarketController extends Controller
     }
 
     public function store(Request $request)
-{
-    $validated = $request->validate([
-        'name' => 'required',
-        'code' => 'required',
-        'address' => 'required',
-        'phone' => 'nullable',
-        'is_active' => 'required',
-    ]);
+    {
+        $validated = $request->validate([
+            'name' => 'required',
+            'code' => 'required',
+            'address' => 'required',
+            'phone' => 'nullable',
+            'is_active' => 'required',
+        ]);
 
-    Market::create($validated);
+        Market::create($validated);
 
-    return redirect()->route('markets.index');
-}
+        return redirect()->route('markets.index');
+    }
+
     public function show(string $id)
     {
         //
     }
 
     public function edit(string $id)
-{
-    $market = Market::findOrFail($id);
+    {
+        $market = Market::findOrFail($id);
 
-    return view('markets.edit', compact('market'));
-}
+        return view('markets.edit', compact('market'));
+    }
 
     public function update(Request $request, string $id)
-{
-    $market = Market::findOrFail($id);
+    {
+        $market = Market::findOrFail($id);
 
-    $validated = $request->validate([
-        'name' => 'required',
-        'code' => 'required',
-        'address' => 'required',
-        'phone' => 'nullable',
-        'is_active' => 'required',
-    ]);
+        $validated = $request->validate([
+            'name' => 'required',
+            'code' => 'required',
+            'address' => 'required',
+            'phone' => 'nullable',
+            'is_active' => 'required',
+        ]);
 
-    $market->update($validated);
+        $market->update($validated);
 
-    return redirect()->route('markets.index');
-}
+        return redirect()->route('markets.index');
+    }
 
     public function destroy(string $id)
-{
-    $market = Market::findOrFail($id);
+    {
+        $market = Market::findOrFail($id);
 
-    $market->delete();
+        $market->delete();
 
-    return redirect()->route('markets.index');
-}
+        return redirect()->route('markets.index');
+    }
 }

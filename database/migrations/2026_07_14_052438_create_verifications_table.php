@@ -24,7 +24,7 @@ return new class extends Migration
 
             $table->enum('status', [
                 'Pending',
-                'Terverifikasi'
+                'Terverifikasi',
             ])->default('Pending');
 
             $table->text('catatan')
@@ -39,7 +39,6 @@ return new class extends Migration
 
         });
     }
-
 
     public function down(): void
     {

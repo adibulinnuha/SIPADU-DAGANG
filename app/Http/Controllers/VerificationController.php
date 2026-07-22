@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Verification;
 use App\Models\Retribution;
+use App\Models\Verification;
 use Illuminate\Http\Request;
 
 class VerificationController extends Controller
@@ -11,9 +11,9 @@ class VerificationController extends Controller
     public function index()
     {
         $verifications = Verification::with([
-                'retribution.market',
-                'verifier'
-            ])
+            'retribution.market',
+            'verifier',
+        ])
             ->orderByDesc('created_at')
             ->paginate(15);
 

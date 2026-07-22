@@ -15,12 +15,10 @@ class UserController extends Controller
         return view('users.index', compact('users'));
     }
 
-
     public function create()
     {
         return view('users.create');
     }
-
 
     public function store(Request $request)
     {
@@ -31,7 +29,6 @@ class UserController extends Controller
             'role' => 'required',
         ]);
 
-
         User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -39,18 +36,15 @@ class UserController extends Controller
             'role' => $request->role,
         ]);
 
-
         return redirect()
             ->route('users.index')
             ->with('success', 'User berhasil dibuat');
     }
 
-
     public function edit(User $user)
     {
         return view('users.edit', compact('user'));
     }
-
 
     public function update(Request $request, User $user)
     {
@@ -60,19 +54,16 @@ class UserController extends Controller
             'role' => 'required',
         ]);
 
-
         $user->update([
             'name' => $request->name,
             'email' => $request->email,
             'role' => $request->role,
         ]);
 
-
         return redirect()
             ->route('users.index')
             ->with('success', 'User berhasil diperbarui');
     }
-
 
     public function destroy(User $user)
     {

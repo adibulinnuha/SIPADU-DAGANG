@@ -2,25 +2,26 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
 use Exception;
+use Illuminate\Support\Facades\Http;
 
 class GeminiService
 {
     protected string $apiKey;
+
     protected string $model;
 
     public function __construct()
     {
         $this->apiKey = config('services.gemini.api_key');
-        $this->model  = config('services.gemini.model');
+        $this->model = config('services.gemini.model');
     }
 
     public function ocr(string $base64Image, string $mimeType): array
     {
         $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
 
-        $prompt = <<<PROMPT
+        $prompt = <<<'PROMPT'
 Anda adalah sistem OCR resmi SIPADU-DAGANG.
 
 Baca struk e-Ticketing retribusi pasar.
@@ -62,7 +63,7 @@ PROMPT;
                 ],
             ]);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             throw new Exception(
                 'Gemini API Error: '.$response->body()
             );

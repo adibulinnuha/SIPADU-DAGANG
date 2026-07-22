@@ -2,19 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Retribution;
 use App\Models\Market;
+use App\Models\Retribution;
+use Illuminate\Http\Request;
 
 class OcrController extends Controller
 {
-
     public function index()
     {
         return view('ocr.index');
     }
-
-
 
     public function process(Request $request)
     {
@@ -24,17 +21,13 @@ class OcrController extends Controller
             'image' => [
                 'required',
                 'image',
-                'max:4096'
+                'max:4096',
             ],
 
         ]);
 
-
-
         $path = $request->file('image')
             ->store('ocr-temp');
-
-
 
         /*
         |--------------------------------------------------------------------------
@@ -43,7 +36,6 @@ class OcrController extends Controller
         | Nanti diganti Gemini / Tesseract
         |--------------------------------------------------------------------------
         */
-
 
         $ocrData = [
 
@@ -61,19 +53,13 @@ class OcrController extends Controller
 
         ];
 
-
-
         return view('ocr.review', [
 
-            'ocr' => $ocrData
+            'ocr' => $ocrData,
 
         ]);
 
     }
-
-
-
-
 
     public function review()
     {
@@ -82,11 +68,6 @@ class OcrController extends Controller
             ->route('ocr.index');
 
     }
-
-
-
-
-
 
     public function store(Request $request)
     {
@@ -103,12 +84,8 @@ class OcrController extends Controller
 
         ]);
 
-
-
         $market = Market::where('name', $request->pasar)
             ->first();
-
-
 
         Retribution::create([
 
@@ -128,8 +105,6 @@ class OcrController extends Controller
 
         ]);
 
-
-
         return redirect()
 
             ->route('dashboard')
@@ -140,5 +115,4 @@ class OcrController extends Controller
             );
 
     }
-
 }

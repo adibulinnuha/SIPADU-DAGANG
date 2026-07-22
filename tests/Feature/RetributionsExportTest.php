@@ -19,7 +19,7 @@ test('authenticated user can download retributions excel export', function () {
 
     $response->assertStatus(200);
 
-    Excel::assertDownloaded('Retribusi_' . now()->format('Y-m-d_H-i') . '.xlsx', function (RetributionsExport $export) {
+    Excel::assertDownloaded('Retribusi_'.now()->format('Y-m-d_H-i').'.xlsx', function (RetributionsExport $export) {
         return true;
     });
 });
@@ -43,12 +43,12 @@ test('retributions export correctly instantiates filters from request', function
 
     $response->assertStatus(200);
 
-    Excel::assertDownloaded('Retribusi_' . now()->format('Y-m-d_H-i') . '.xlsx', function (RetributionsExport $export) use ($market) {
+    Excel::assertDownloaded('Retribusi_'.now()->format('Y-m-d_H-i').'.xlsx', function (RetributionsExport $export) {
         $query = $export->query();
 
         $wheres = $query->getQuery()->wheres;
 
-        $hasMarketFilter = collect($wheres)->contains(function ($where) use ($market) {
+        $hasMarketFilter = collect($wheres)->contains(function ($where) {
             return ($where['column'] ?? null) === 'market_id';
         });
 
@@ -87,7 +87,7 @@ test('retributions export query returns correct data based on filters', function
         'payment_method' => 'QRIS',
     ]);
 
-    $exportAll = new RetributionsExport();
+    $exportAll = new RetributionsExport;
     $resultsAll = $exportAll->query()->get();
 
     expect($resultsAll)->toHaveCount(2);

@@ -11,12 +11,10 @@ class RekapHarianExport implements FromCollection, WithHeadings
 {
     protected $tanggal;
 
-
     public function __construct($tanggal)
     {
         $this->tanggal = $tanggal;
     }
-
 
     public function collection()
     {
@@ -39,13 +37,12 @@ class RekapHarianExport implements FromCollection, WithHeadings
             ->get();
     }
 
-
     public function headings(): array
     {
         return [
             'Pasar',
             'Jumlah Transaksi',
-            'Total Nominal'
+            'Total Nominal',
         ];
     }
 }
