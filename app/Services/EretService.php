@@ -13,7 +13,7 @@ class EretService
         $date = Carbon::parse($date)->toDateString();
 
         $rows = Retribution::query()
-            ->with('market')
+            ->with(['market', 'items'])
             ->whereDate('retribution_date', $date)
             ->get();
 
@@ -31,38 +31,16 @@ class EretService
                     'total' => 0,
                 ];
 
-                foreach ($items as $item) {
-                    $jenis = strtolower($item->jenis_retribusi);
-                    $amount = (float) $item->amount;
+                foreach ($items as $retribution) {
+                    if ($retribution->items->isNotEmpty()) {
+                        foreach ($retribution->items as $item) {
+                            $this->addItemToSummary($summary, $item);
+                        }
 
-                    switch ($jenis) {
-                        case 'kios':
-                            $summary['kios'] += $amount;
-                            break;
-
-                        case 'los':
-                            $summary['los'] += $amount;
-                            break;
-
-                        case 'dasaran terbuka':
-                        case 'dasaran_terbuka':
-                            $summary['dasaran_terbuka'] += $amount;
-                            break;
-
-                        case 'mck':
-                            $summary['mck'] += $amount;
-                            break;
-
-                        case 'kebersihan':
-                            $summary['kebersihan'] += $amount;
-                            break;
-
-                        case 'listrik':
-                            $summary['listrik'] += $amount;
-                            break;
+                        continue;
                     }
 
-                    $summary['total'] += $amount;
+                    $this->addItemToSummary($summary, $retribution);
                 }
 
                 return $summary;
@@ -72,9 +50,20 @@ class EretService
 
     public function getGrandTotal(string $date): float
     {
-        return (float) Retribution::query()
+        $date = Carbon::parse($date)->toDateString();
+
+        $rows = Retribution::query()
+            ->with('items')
             ->whereDate('retribution_date', $date)
-            ->sum('amount');
+            ->get();
+
+        return (float) $rows->sum(function (Retribution $retribution): float {
+            if ($retribution->items->isNotEmpty()) {
+                return (float) $retribution->items->sum('amount');
+            }
+
+            return (float) $retribution->amount;
+        });
     }
 
     public function getTransactionCount(string $date): int
@@ -82,5 +71,40 @@ class EretService
         return Retribution::query()
             ->whereDate('retribution_date', $date)
             ->count();
+    }
+
+    private function addItemToSummary(array &$summary, mixed $item): void
+    {
+        $jenis = strtolower((string) ($item->jenis_retribusi ?? ''));
+        $amount = (float) ($item->amount ?? 0);
+
+        switch ($jenis) {
+            case 'kios':
+                $summary['kios'] += $amount;
+                break;
+
+            case 'los':
+                $summary['los'] += $amount;
+                break;
+
+            case 'dasaran terbuka':
+            case 'dasaran_terbuka':
+                $summary['dasaran_terbuka'] += $amount;
+                break;
+
+            case 'mck':
+                $summary['mck'] += $amount;
+                break;
+
+            case 'kebersihan':
+                $summary['kebersihan'] += $amount;
+                break;
+
+            case 'listrik':
+                $summary['listrik'] += $amount;
+                break;
+        }
+
+        $summary['total'] += $amount;
     }
 }
