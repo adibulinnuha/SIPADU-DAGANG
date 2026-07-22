@@ -74,4 +74,9 @@ class Retribution extends Model
     {
         return $this->belongsTo(User::class, 'locked_by');
     }
+
+    public function items()
+    {
+        return $this->hasMany(RetributionItem::class);
+    }
 }
