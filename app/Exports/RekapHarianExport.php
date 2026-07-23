@@ -2,8 +2,8 @@
 
 namespace App\Exports;
 
-use App\Models\Retribution;
-use Illuminate\Support\Facades\DB;
+use App\Services\AggregateService;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
@@ -11,25 +11,25 @@ class RekapHarianExport implements FromCollection, WithHeadings
 {
     protected string $tanggal;
 
+    protected AggregateService $aggregateService;
+
     public function __construct(string $tanggal)
     {
         $this->tanggal = $tanggal;
+        $this->aggregateService = app(AggregateService::class);
     }
 
-    public function collection()
+    public function collection(): Collection
     {
-        return Retribution::query()
-            ->join('markets', 'markets.id', '=', 'retributions.market_id')
-            ->leftJoin('retribution_items', 'retribution_items.retribution_id', '=', 'retributions.id')
-            ->whereDate('retributions.retribution_date', $this->tanggal)
-            ->groupBy('markets.id', 'markets.name')
-            ->select(
-                'markets.name as pasar',
-                DB::raw('COUNT(DISTINCT retributions.id) as total_transaksi'),
-                DB::raw('COALESCE(SUM(retribution_items.amount), SUM(retributions.amount)) as total_nominal')
-            )
-            ->orderBy('markets.name')
-            ->get();
+        return $this->aggregateService
+            ->getMarketSummary($this->tanggal)
+            ->map(function (array $row) {
+                return (object) [
+                    'pasar' => $row['market'],
+                    'total_transaksi' => $row['total_transaksi'],
+                    'total_nominal' => $row['total_nominal'],
+                ];
+            });
     }
 
     public function headings(): array

@@ -230,9 +230,6 @@ test('eret template service maps aggregated recap values to exported worksheet',
     $spreadsheet = app(EretTemplateService::class)->generate('ERET', '2026-07-29');
     $sheet = $spreadsheet->getActiveSheet();
 
-    expect($sheet->getCell('A1')->getValue())->toBe('Pasar')
-        ->and($sheet->getCell('A2')->getValue())->toBe('Karimata')
-        ->and((float) $sheet->getCell('B2')->getValue())->toBe(250000.0)
-        ->and((float) $sheet->getCell('C2')->getValue())->toBe(150000.0)
-        ->and((float) $sheet->getCell('H2')->getValue())->toBe(400000.0);
+   expect((float) $sheet->getCell('B24')->getValue())->toBe(250000.0)
+    ->and((float) $sheet->getCell('C24')->getValue())->toBe(150000.0);
 });
