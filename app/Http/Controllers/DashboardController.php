@@ -4,10 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Market;
 use App\Models\Retribution;
+use App\Services\AggregateService;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    public function __construct(
+        protected AggregateService $aggregateService
+    ) {}
+
     public function __invoke(): View
     {
         $today = today();
@@ -19,25 +24,11 @@ class DashboardController extends Controller
             $today
         )->count();
 
-        $todayRetributionTotal = Retribution::whereDate(
-            'retribution_date',
-            $today
-        )->sum('amount');
+        $todayRetributionTotal = $this->aggregateService->getGrandTotal($today);
 
-        $monthRetributionTotal = Retribution::where(
-            'retribution_date',
-            '>=',
-            now()->startOfMonth()
-        )->sum('amount');
+        $monthRetributionTotal = $this->aggregateService->getMonthlyTotal($today);
 
-        $topMarkets = Retribution::selectRaw(
-            'market_id, SUM(amount) as total'
-        )
-            ->groupBy('market_id')
-            ->orderByDesc('total')
-            ->limit(5)
-            ->with('market')
-            ->get();
+        $topMarkets = $this->aggregateService->getTopMarkets();
 
         $notSubmittedMarkets = Market::whereNotIn(
             'id',
@@ -52,32 +43,18 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        // Grafik Pendapatan 7 Hari
-
-        $dailyRevenue = Retribution::selectRaw(
-            'DATE(retribution_date) as date, SUM(amount) as total'
-        )
-            ->where(
-                'retribution_date',
-                '>=',
-                now()->subDays(6)->startOfDay()
-            )
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
+        $dailyRevenue = $this->aggregateService->getDailyRevenueSeries(7);
 
         $chartLabels = [];
         $chartValues = [];
 
         foreach ($dailyRevenue as $item) {
-
             $chartLabels[] = date(
                 'd M',
-                strtotime($item->date)
+                strtotime($item['date'])
             );
 
-            $chartValues[] = (int) $item->total;
-
+            $chartValues[] = (int) $item['total'];
         }
 
         return view('dashboard', compact(

@@ -387,13 +387,13 @@ new Chart(ctx, {
                 <div class="flex items-center justify-between border-b py-3">
 
                     <span class="font-medium text-slate-700">
-                        {{ $item->market->name ?? '-' }}
+                        {{ $item['market'] ?? '-' }}
                     </span>
 
 
                     <span class="font-semibold text-blue-700">
 
-                        Rp {{ number_format($item->total,0,',','.') }}
+                        Rp {{ number_format($item['total'],0,',','.') }}
 
                     </span>
 

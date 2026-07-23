@@ -3,24 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Exports\RekapHarianExport;
-use App\Services\EretService;
+use App\Services\AggregateService;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
 class RekapHarianController extends Controller
 {
     public function __construct(
-        protected EretService $eretService
+        protected AggregateService $aggregateService
     ) {}
 
     public function index(Request $request)
     {
         $tanggal = $request->input('tanggal', now()->toDateString());
 
-        $rekap = $this->eretService->getDailyRecap($tanggal);
+        $rekap = $this->aggregateService->getDailyRecap($tanggal);
 
-        $grandTotal = $rekap->sum('total');
-        $grandTransaksi = $rekap->count();
+        $grandTotal = $this->aggregateService->getGrandTotal($tanggal);
+        $grandTransaksi = $this->aggregateService->getTransactionCount($tanggal);
 
         return view('rekap-harian.index', compact(
             'tanggal',

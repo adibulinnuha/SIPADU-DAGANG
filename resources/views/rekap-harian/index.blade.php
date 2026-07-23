@@ -107,10 +107,6 @@
                     </th>
 
                     <th class="px-6 py-3 text-right">
-                        Transaksi
-                    </th>
-
-                    <th class="px-6 py-3 text-right">
                         Total
                     </th>
 
@@ -131,18 +127,13 @@
 
 
                         <td class="px-6 py-4 font-medium">
-                            {{ $item->market_name }}
-                        </td>
-
-
-                        <td class="px-6 py-4 text-right">
-                            {{ $item->total_transaksi }}
+                            {{ $item['market'] }}
                         </td>
 
 
                         <td class="px-6 py-4 text-right font-semibold">
 
-                            Rp {{ number_format($item->total_nominal,0,',','.') }}
+                            Rp {{ number_format($item['total'],0,',','.') }}
 
                         </td>
 
@@ -171,20 +162,13 @@
 
                 <tr>
 
-                    <td colspan="2" class="px-6 py-4">
+                    <td colspan="1" class="px-6 py-4">
                         GRAND TOTAL
                     </td>
 
 
                     <td class="px-6 py-4 text-right">
-                        {{ $grandTransaksi }}
-                    </td>
-
-
-                    <td class="px-6 py-4 text-right">
-
-                        Rp {{ number_format($grandTotal,0,',','.') }}
-
+                        {{ $grandTransaksi }} transaksi
                     </td>
 
                 </tr>

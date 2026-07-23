@@ -4,6 +4,7 @@ use App\Models\Market;
 use App\Models\Retribution;
 use App\Models\RetributionItem;
 use App\Models\User;
+use App\Services\AggregateService;
 use App\Services\EretService;
 use App\Services\EretTemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -86,6 +87,49 @@ test('eret service can summarize daily recap from retribution items', function (
         ->and($recap[0]['kios'])->toBe(250000.0)
         ->and($recap[0]['los'])->toBe(150000.0)
         ->and($recap[0]['total'])->toBe(400000.0);
+});
+
+test('aggregate service summarizes item-aware totals per market and category', function () {
+    $user = User::factory()->create();
+
+    $market = Market::create([
+        'name' => 'Karimata',
+        'code' => 'KR01',
+    ]);
+
+    $retribution = Retribution::create([
+        'market_id' => $market->id,
+        'recorded_by' => $user->id,
+        'jenis_retribusi' => 'Kebersihan',
+        'retribution_date' => '2026-07-29',
+        'amount' => 5000,
+        'payment_method' => 'Tunai',
+        'status' => 'draft',
+    ]);
+
+    RetributionItem::create([
+        'retribution_id' => $retribution->id,
+        'jenis_retribusi' => 'kios',
+        'quantity' => 1,
+        'amount' => 250000,
+    ]);
+
+    RetributionItem::create([
+        'retribution_id' => $retribution->id,
+        'jenis_retribusi' => 'los',
+        'quantity' => 1,
+        'amount' => 150000,
+    ]);
+
+    $aggregate = app(AggregateService::class);
+
+    expect($aggregate->getDailyRecap('2026-07-29'))->toHaveCount(1)
+        ->and($aggregate->getDailyRecap('2026-07-29')[0]['market'])->toBe('Karimata')
+        ->and($aggregate->getDailyRecap('2026-07-29')[0]['kios'])->toBe(250000.0)
+        ->and($aggregate->getDailyRecap('2026-07-29')[0]['los'])->toBe(150000.0)
+        ->and($aggregate->getDailyRecap('2026-07-29')[0]['total'])->toBe(400000.0)
+        ->and($aggregate->getGrandTotal('2026-07-29'))->toBe(400000.0)
+        ->and($aggregate->getTransactionCount('2026-07-29'))->toBe(1);
 });
 
 test('eret template service maps aggregated recap values to exported worksheet', function () {
