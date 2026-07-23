@@ -157,4 +157,25 @@ class AggregateService
 
         $summary['total'] += $amount;
     }
+public function getMarketSummary(string $date): Collection
+{
+    $date = Carbon::parse($date)->toDateString();
+
+    $rows = Retribution::query()
+        ->with(['market', 'items'])
+        ->whereDate('retribution_date', $date)
+        ->get();
+
+    return $rows
+        ->groupBy(fn (Retribution $retribution) => $retribution->market?->name ?? 'Tanpa Pasar')
+        ->map(fn (Collection $items, string $marketName): array => [
+            'market' => $marketName,
+            'total_transaksi' => $items->count(),
+            'total_nominal' => (float) $items->sum(
+                fn (Retribution $retribution) => $this->resolveRetributionTotal($retribution)
+            ),
+        ])
+        ->sortBy('market')
+        ->values();
+}
 }

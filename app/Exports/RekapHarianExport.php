@@ -9,9 +9,9 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 
 class RekapHarianExport implements FromCollection, WithHeadings
 {
-    protected $tanggal;
+    protected string $tanggal;
 
-    public function __construct($tanggal)
+    public function __construct(string $tanggal)
     {
         $this->tanggal = $tanggal;
     }
@@ -20,18 +20,13 @@ class RekapHarianExport implements FromCollection, WithHeadings
     {
         return Retribution::query()
             ->join('markets', 'markets.id', '=', 'retributions.market_id')
+            ->leftJoin('retribution_items', 'retribution_items.retribution_id', '=', 'retributions.id')
+            ->whereDate('retributions.retribution_date', $this->tanggal)
+            ->groupBy('markets.id', 'markets.name')
             ->select(
                 'markets.name as pasar',
-                DB::raw('COUNT(retributions.id) as total_transaksi'),
-                DB::raw('SUM(retributions.amount) as total_nominal')
-            )
-            ->whereDate(
-                'retributions.retribution_date',
-                $this->tanggal
-            )
-            ->groupBy(
-                'markets.id',
-                'markets.name'
+                DB::raw('COUNT(DISTINCT retributions.id) as total_transaksi'),
+                DB::raw('COALESCE(SUM(retribution_items.amount), SUM(retributions.amount)) as total_nominal')
             )
             ->orderBy('markets.name')
             ->get();
