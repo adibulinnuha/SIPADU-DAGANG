@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\EretTemplateService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -17,7 +18,7 @@ class RetributionsExportController extends Controller
     {
         $date = $request->input('date', now()->toDateString());
 
-        $sheetName = now()->translatedFormat('d M');
+$sheetName = Carbon::parse($date)->translatedFormat('d M');
 
         $spreadsheet = $this->eretTemplateService->generate(
             $sheetName,
