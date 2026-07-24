@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Models\Retribution;
 use App\Models\WorkflowLog;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class WorkflowService
 {
@@ -18,7 +18,6 @@ class WorkflowService
         );
     }
 
-
     public function verify(Retribution $retribution): Retribution
     {
         return $this->changeStatus(
@@ -27,7 +26,6 @@ class WorkflowService
             'VERIFY'
         );
     }
-
 
     public function approve(Retribution $retribution): Retribution
     {
@@ -38,7 +36,6 @@ class WorkflowService
         );
     }
 
-
     public function lock(Retribution $retribution): Retribution
     {
         return $this->changeStatus(
@@ -47,7 +44,6 @@ class WorkflowService
             'LOCK'
         );
     }
-
 
     private function changeStatus(
         Retribution $retribution,
@@ -63,18 +59,15 @@ class WorkflowService
 
             $oldStatus = $retribution->status;
 
-
-            if (!$this->canChangeStatus($oldStatus, $status)) {
+            if (! $this->canChangeStatus($oldStatus, $status)) {
                 throw new \Exception(
                     "Perubahan status {$oldStatus} ke {$status} tidak diperbolehkan."
                 );
             }
 
-
             $retribution->update([
                 'status' => $status,
             ]);
-
 
             WorkflowLog::create([
                 'user_id' => Auth::id(),
@@ -85,11 +78,9 @@ class WorkflowService
                 'description' => "Status berubah dari {$oldStatus} menjadi {$status}",
             ]);
 
-
             return $retribution;
         });
     }
-
 
     private function canChangeStatus(
         ?string $oldStatus,
@@ -98,22 +89,21 @@ class WorkflowService
 
         $flows = [
             'draft' => [
-                'submitted'
+                'submitted',
             ],
 
             'submitted' => [
-                'verified'
+                'verified',
             ],
 
             'verified' => [
-                'approved'
+                'approved',
             ],
 
             'approved' => [
-                'locked'
+                'locked',
             ],
         ];
-
 
         return in_array(
             $newStatus,

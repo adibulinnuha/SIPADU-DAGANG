@@ -1,0 +1,11 @@
+ app/Exports/RekapHarianExport.php                  |  2 [32m+[m[31m-[m
+ app/Models/Market.php                              |  2 [32m+[m[31m-[m
+ app/Models/WorkflowLog.php                         |  2 [32m+[m[31m-[m
+ app/Services/AggregateService.php                  | 38 [32m+++++++++++[m[31m-----------[m
+ app/Services/EretTemplateService.php               | 16 [32m++++[m[31m-----[m
+ app/Services/WorkflowService.php                   | 24 [32m++++[m[31m----------[m
+ config/eret.php                                    |  2 [32m+[m[31m-[m
+ ...026_07_22_042646_create_workflow_logs_table.php |  2 [32m+[m[31m-[m
+ tests/Feature/EretWorkbookContentTest.php          |  8 [32m++[m[31m---[m
+ tests/Feature/RetributionItemsTest.php             |  4 [32m+[m[31m--[m
+ 10 files changed, 45 insertions(+), 55 deletions(-)

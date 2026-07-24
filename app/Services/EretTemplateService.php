@@ -39,13 +39,13 @@ class EretTemplateService
                 continue;
             }
 
-            $sheet->setCellValue($columns['kios'] . $excelRow, $row['kios']);
-            $sheet->setCellValue($columns['los'] . $excelRow, $row['los']);
-            $sheet->setCellValue($columns['dasaran_terbuka'] . $excelRow, $row['dasaran_terbuka']);
-            $sheet->setCellValue($columns['kebersihan'] . $excelRow, $row['kebersihan']);
-            $sheet->setCellValue($columns['mck'] . $excelRow, $row['mck']);
-            $sheet->setCellValue($columns['listrik'] . $excelRow, $row['listrik']);
-            $sheet->setCellValue($columns['total'] . $excelRow, $row['total']);
+            $sheet->setCellValue($columns['kios'].$excelRow, $row['kios']);
+            $sheet->setCellValue($columns['los'].$excelRow, $row['los']);
+            $sheet->setCellValue($columns['dasaran_terbuka'].$excelRow, $row['dasaran_terbuka']);
+            $sheet->setCellValue($columns['kebersihan'].$excelRow, $row['kebersihan']);
+            $sheet->setCellValue($columns['mck'].$excelRow, $row['mck']);
+            $sheet->setCellValue($columns['listrik'].$excelRow, $row['listrik']);
+            $sheet->setCellValue($columns['total'].$excelRow, $row['total']);
         }
 
         return $spreadsheet;
