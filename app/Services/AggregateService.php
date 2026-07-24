@@ -157,8 +157,9 @@ class AggregateService
 
         $summary['total'] += $amount;
     }
-public function getMarketSummary(string $date): Collection
-{
+
+    public function getMarketSummary(string $date): Collection
+    {
     $date = Carbon::parse($date)->toDateString();
 
     $rows = Retribution::query()

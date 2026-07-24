@@ -8,12 +8,12 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 class EretTemplateService
 {
     public function __construct(
-        protected EretService $eretService
+        protected AggregateService $aggregateService
     ) {}
 
     public function generate(string $sheetName, string $date): Spreadsheet
     {
-        $template = storage_path('app/templates/ERET JULI.xltx');
+        $template = config('eret.template');
 
         $spreadsheet = IOFactory::load($template);
 
@@ -27,15 +27,25 @@ class EretTemplateService
             $spreadsheet->getIndex($sheet)
         );
 
-        $rows = $this->eretService->getDailyRecap($date);
+        $marketRows = config('eret.market_rows');
+        $columns = config('eret.columns');
+
+        $rows = $this->aggregateService->getDailyRecap($date);
 
         foreach ($rows as $row) {
-            $sheet->setCellValue('B24', $row['kios']);
-            $sheet->setCellValue('C24', $row['los']);
-            $sheet->setCellValue('D24', $row['dasaran_terbuka']);
-            $sheet->setCellValue('E24', $row['kebersihan']);
+            $excelRow = $marketRows[$row['market']] ?? null;
 
-            break;
+            if ($excelRow === null) {
+                continue;
+            }
+
+            $sheet->setCellValue($columns['kios'] . $excelRow, $row['kios']);
+            $sheet->setCellValue($columns['los'] . $excelRow, $row['los']);
+            $sheet->setCellValue($columns['dasaran_terbuka'] . $excelRow, $row['dasaran_terbuka']);
+            $sheet->setCellValue($columns['kebersihan'] . $excelRow, $row['kebersihan']);
+            $sheet->setCellValue($columns['mck'] . $excelRow, $row['mck']);
+            $sheet->setCellValue($columns['listrik'] . $excelRow, $row['listrik']);
+            $sheet->setCellValue($columns['total'] . $excelRow, $row['total']);
         }
 
         return $spreadsheet;
