@@ -20,6 +20,7 @@ class RetributionFactory extends Factory
             'retribution_date' => fake()->date(),
             'amount' => fake()->numberBetween(10000, 500000),
             'payment_method' => 'cash',
+            'status' => 'draft',
             'notes' => fake()->optional()->sentence(),
         ];
     }

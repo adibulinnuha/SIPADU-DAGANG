@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Retribution;
 use App\Models\Verification;
+use App\Services\WorkflowService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class VerificationController extends Controller
 {
@@ -37,16 +39,29 @@ class VerificationController extends Controller
             'tanggal_verifikasi' => 'required|date',
         ]);
 
-        Verification::updateOrCreate(
-            ['retribution_id' => $request->retribution_id],
-            [
-                'nomor_setor' => $request->nomor_setor,
-                'tanggal_verifikasi' => $request->tanggal_verifikasi,
-                'status' => 'Terverifikasi',
-                'catatan' => $request->catatan,
-                'verified_by' => auth()->id(),
-            ]
-        );
+        DB::transaction(function () use ($request) {
+
+            // Legacy write — create/update the verifications record
+            Verification::updateOrCreate(
+                ['retribution_id' => $request->retribution_id],
+                [
+                    'nomor_setor' => $request->nomor_setor,
+                    'tanggal_verifikasi' => $request->tanggal_verifikasi,
+                    'status' => 'Terverifikasi',
+                    'catatan' => $request->catatan,
+                    'verified_by' => auth()->id(),
+                ]
+            );
+
+            // Dual-write — also advance the retribution workflow
+            $retribution = Retribution::findOrFail($request->retribution_id);
+
+            app(WorkflowService::class)->verifyWithNomorSetor(
+                $retribution,
+                $request->nomor_setor,
+                $request->catatan
+            );
+        });
 
         return redirect()
             ->route('verifications.index')
@@ -78,13 +93,31 @@ class VerificationController extends Controller
             'status' => 'required|in:Pending,Terverifikasi',
         ]);
 
-        $verification->update([
-            'nomor_setor' => $request->nomor_setor,
-            'tanggal_verifikasi' => $request->tanggal_verifikasi,
-            'status' => $request->status,
-            'catatan' => $request->catatan,
-            'verified_by' => auth()->id(),
-        ]);
+        DB::transaction(function () use ($request, $verification) {
+
+            // Legacy write — update the verifications record
+            $verification->update([
+                'nomor_setor' => $request->nomor_setor,
+                'tanggal_verifikasi' => $request->tanggal_verifikasi,
+                'status' => $request->status,
+                'catatan' => $request->catatan,
+                'verified_by' => auth()->id(),
+            ]);
+
+            // Dual-write — only transition the retribution workflow when
+            // the legacy status is set to "Terverifikasi".
+            // The state machine does not support reverse transitions,
+            // so "Pending" updates are intentionally skipped.
+            if ($request->status === 'Terverifikasi') {
+                $retribution = $verification->retribution;
+
+                // Store the nomor_setor on the retribution record
+                $retribution->update(['nomor_setor' => $request->nomor_setor]);
+
+                // Perform the workflow verify transition
+                app(WorkflowService::class)->verify($retribution);
+            }
+        });
 
         return redirect()
             ->route('verifications.index')

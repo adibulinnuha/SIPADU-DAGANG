@@ -65,4 +65,17 @@ return [
 
     'number_format' => '#,##0',
 
+    /*
+    |--------------------------------------------------------------------------
+    | Sumber Data Bendel
+    |--------------------------------------------------------------------------
+    | 'legacy'   — membaca dari tabel verifications (lama)
+    | 'workflow' — membaca dari retributions.status IN ('verified','approved','locked')
+    |
+    | Selama masa transisi, set ke 'legacy' untuk backward compatibility.
+    | Beralih ke 'workflow' hanya setelah migrasi data dan regression test selesai.
+    */
+
+    'bendel_source' => env('BENDEL_SOURCE', 'legacy'),
+
 ];

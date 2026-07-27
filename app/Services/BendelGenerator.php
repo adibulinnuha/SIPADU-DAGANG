@@ -29,13 +29,24 @@ class BendelGenerator
                 'keterangan' => 'Generate otomatis SIPADU-DAGANG',
             ]);
 
-            $verifications = Verification::with([
-                'retribution.market',
-            ])
-                ->where('status', 'Terverifikasi')
-                ->get();
+            $source = config('eret.bendel_source', 'legacy');
 
-            if ($verifications->isEmpty()) {
+            if ($source === 'workflow') {
+                $retributions = app(WorkflowService::class)->getVerifiedRetributions();
+            } else {
+                $verifications = Verification::with([
+                    'retribution.market',
+                ])
+                    ->where('status', 'Terverifikasi')
+                    ->get();
+
+                // Map legacy format to the same structure as workflow source
+                $retributions = $verifications
+                    ->filter(fn ($v) => $v->retribution)
+                    ->map(fn ($v) => $v->retribution);
+            }
+
+            if ($retributions->isEmpty()) {
                 return $bendel;
             }
 
@@ -49,13 +60,7 @@ class BendelGenerator
 
             $total = 0;
 
-            foreach ($verifications as $verification) {
-
-                $retribution = $verification->retribution;
-
-                if (! $retribution) {
-                    continue;
-                }
+            foreach ($retributions as $retribution) {
 
                 BendelDocumentItem::create([
                     'bendel_document_id' => $document->id,

@@ -6,7 +6,7 @@ use App\Models\Market;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Market>
+ * @extends Factory<Market>
  */
 class MarketFactory extends Factory
 {
@@ -15,10 +15,10 @@ class MarketFactory extends Factory
     public function definition(): array
     {
         return [
-            'name'      => fake()->company(),
-            'code'      => strtoupper(fake()->unique()->lexify('???')),
-            'address'   => fake()->address(),
-            'phone'     => fake()->phoneNumber(),
+            'name' => fake()->company(),
+            'code' => strtoupper(fake()->unique()->lexify('???')),
+            'address' => fake()->address(),
+            'phone' => fake()->phoneNumber(),
             'is_active' => true,
         ];
     }

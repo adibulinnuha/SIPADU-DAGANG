@@ -70,19 +70,19 @@ class EretWorkbookContentTest extends TestCase
         $spreadsheet = IOFactory::load($this->tempPath);
 
         // 7. Verify workbook loaded and expected worksheet exists
-$this->assertGreaterThan(
-    0,
-    $spreadsheet->getSheetCount(),
-    'Workbook should contain at least one worksheet.'
-);
+        $this->assertGreaterThan(
+            0,
+            $spreadsheet->getSheetCount(),
+            'Workbook should contain at least one worksheet.'
+        );
 
-$sheetName = Carbon::parse($testDate)->translatedFormat('d M');
-$worksheet = $spreadsheet->getSheetByName($sheetName);
+        $sheetName = Carbon::parse($testDate)->translatedFormat('d M');
+        $worksheet = $spreadsheet->getSheetByName($sheetName);
 
-$this->assertNotNull(
-    $worksheet,
-    "Worksheet '{$sheetName}' should exist in the workbook."
-);
+        $this->assertNotNull(
+            $worksheet,
+            "Worksheet '{$sheetName}' should exist in the workbook."
+        );
 
         // 8. Get expected values from AggregateService
         $aggregateService = app(AggregateService::class);
