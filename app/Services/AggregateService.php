@@ -52,12 +52,18 @@ class AggregateService
     {
         $date = Carbon::parse($date)->toDateString();
 
-        $rows = Retribution::query()
-            ->with('items')
+        $result = Retribution::query()
+            ->selectRaw('COALESCE(SUM(COALESCE(item_totals.total, retributions.amount)), 0) as grand_total')
+            ->leftJoin(
+                \DB::raw('(SELECT retribution_id, SUM(amount) as total FROM retribution_items GROUP BY retribution_id) as item_totals'),
+                'item_totals.retribution_id',
+                '=',
+                'retributions.id'
+            )
             ->whereDate('retribution_date', $date)
-            ->get();
+            ->first();
 
-        return (float) $rows->sum(fn (Retribution $retribution): float => $this->resolveRetributionTotal($retribution));
+        return (float) ($result?->grand_total ?? 0);
     }
 
     public function getTransactionCount(string $date): int
@@ -71,28 +77,43 @@ class AggregateService
     {
         $date = Carbon::parse($date);
 
-        $rows = Retribution::query()
-            ->with('items')
+        $result = Retribution::query()
+            ->selectRaw('COALESCE(SUM(COALESCE(item_totals.total, retributions.amount)), 0) as monthly_total')
+            ->leftJoin(
+                \DB::raw('(SELECT retribution_id, SUM(amount) as total FROM retribution_items GROUP BY retribution_id) as item_totals'),
+                'item_totals.retribution_id',
+                '=',
+                'retributions.id'
+            )
             ->whereMonth('retribution_date', $date->month)
             ->whereYear('retribution_date', $date->year)
-            ->get();
+            ->first();
 
-        return (float) $rows->sum(fn (Retribution $retribution): float => $this->resolveRetributionTotal($retribution));
+        return (float) ($result?->monthly_total ?? 0);
     }
 
     public function getTopMarkets(): Collection
     {
-        return Retribution::query()
-            ->with('market', 'items')
+        $rows = Retribution::query()
+            ->selectRaw('COALESCE(m.name, ?) as market_name', ['Tanpa Pasar'])
+            ->selectRaw('SUM(COALESCE(item_totals.total, retributions.amount)) as total_amount')
+            ->leftJoin('markets as m', 'm.id', '=', 'retributions.market_id')
+            ->leftJoin(
+                \DB::raw('(SELECT retribution_id, SUM(amount) as total FROM retribution_items GROUP BY retribution_id) as item_totals'),
+                'item_totals.retribution_id',
+                '=',
+                'retributions.id'
+            )
+            ->groupBy('m.name')
+            ->orderByDesc('total_amount')
+            ->limit(5)
             ->get()
-            ->groupBy(fn ($retribution) => $retribution->market?->name ?? 'Tanpa Pasar')
-            ->map(fn (Collection $retributions, string $marketName) => [
-                'market' => $marketName,
-                'total' => (float) $retributions->sum(fn (Retribution $retribution): float => $this->resolveRetributionTotal($retribution)),
-            ])
-            ->sortByDesc('total')
-            ->take(5)
-            ->values();
+            ->map(fn ($row) => [
+                'market' => $row->market_name,
+                'total' => (float) $row->total_amount,
+            ]);
+
+        return $rows;
     }
 
     public function getDailyRevenueSeries(int $days = 7): Collection
@@ -100,18 +121,24 @@ class AggregateService
         $start = Carbon::today()->subDays($days - 1)->startOfDay();
 
         $rows = Retribution::query()
-            ->with('items')
+            ->selectRaw('DATE(retribution_date) as date')
+            ->selectRaw('COALESCE(SUM(COALESCE(item_totals.total, retributions.amount)), 0) as total')
+            ->leftJoin(
+                \DB::raw('(SELECT retribution_id, SUM(amount) as total FROM retribution_items GROUP BY retribution_id) as item_totals'),
+                'item_totals.retribution_id',
+                '=',
+                'retributions.id'
+            )
             ->where('retribution_date', '>=', $start)
-            ->get();
+            ->groupBy(\DB::raw('DATE(retribution_date)'))
+            ->orderBy('date')
+            ->get()
+            ->map(fn ($row) => [
+                'date' => $row->date,
+                'total' => (float) $row->total,
+            ]);
 
-        return $rows
-            ->groupBy(fn ($retribution) => Carbon::parse($retribution->retribution_date)->toDateString())
-            ->map(fn (Collection $items, string $date) => [
-                'date' => $date,
-                'total' => (float) $items->sum(fn (Retribution $retribution): float => $this->resolveRetributionTotal($retribution)),
-            ])
-            ->sortBy('date')
-            ->values();
+        return $rows;
     }
 
     private function resolveRetributionTotal(Retribution $retribution): float

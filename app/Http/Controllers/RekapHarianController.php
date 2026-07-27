@@ -15,7 +15,11 @@ class RekapHarianController extends Controller
 
     public function index(Request $request)
     {
-        $tanggal = $request->input('tanggal', now()->toDateString());
+        $validated = $request->validate([
+            'tanggal' => 'nullable|date',
+        ]);
+
+        $tanggal = $validated['tanggal'] ?? now()->toDateString();
 
         $rekap = $this->aggregateService->getDailyRecap($tanggal);
 
@@ -32,10 +36,11 @@ class RekapHarianController extends Controller
 
     public function export(Request $request)
     {
-        $tanggal = $request->input(
-            'tanggal',
-            now()->toDateString()
-        );
+        $validated = $request->validate([
+            'tanggal' => 'nullable|date',
+        ]);
+
+        $tanggal = $validated['tanggal'] ?? now()->toDateString();
 
         return Excel::download(
             new RekapHarianExport($tanggal),

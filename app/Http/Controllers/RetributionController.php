@@ -6,6 +6,7 @@ use App\Exports\RetributionsExport;
 use App\Models\Market;
 use App\Models\Retribution;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
 class RetributionController extends Controller
@@ -29,11 +30,15 @@ class RetributionController extends Controller
             $query->whereDate('retribution_date', '<=', $request->date_end);
         }
 
-        $totalTransactions = (clone $query)->count();
-        $totalAmount = (clone $query)->sum('amount');
-        $totalMarkets = (clone $query)
-            ->distinct('market_id')
-            ->count('market_id');
+        $aggregate = (clone $query)
+            ->selectRaw('COUNT(*) as total_transactions')
+            ->selectRaw('COALESCE(SUM(amount), 0) as total_amount')
+            ->selectRaw('COUNT(DISTINCT market_id) as total_markets')
+            ->first();
+
+        $totalTransactions = $aggregate?->total_transactions ?? 0;
+        $totalAmount = (float) ($aggregate?->total_amount ?? 0);
+        $totalMarkets = $aggregate?->total_markets ?? 0;
 
         $retributions = $query->paginate(15)->withQueryString();
 

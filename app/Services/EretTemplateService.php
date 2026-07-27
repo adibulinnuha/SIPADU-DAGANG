@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Log;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
@@ -15,11 +16,21 @@ class EretTemplateService
     {
         $template = config('eret.template');
 
+        if (! file_exists($template)) {
+            throw new \RuntimeException(
+                'Template ERET tidak ditemukan: '.$template
+            );
+        }
+
         $spreadsheet = IOFactory::load($template);
 
         $sheet = $spreadsheet->getSheetByName($sheetName);
 
         if ($sheet === null) {
+            Log::warning('Sheet "{name}" tidak ditemukan di template, menggunakan sheet aktif.', [
+                'name' => $sheetName,
+            ]);
+
             $sheet = $spreadsheet->getActiveSheet();
         }
 

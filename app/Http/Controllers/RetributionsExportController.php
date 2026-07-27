@@ -15,7 +15,11 @@ class RetributionsExportController extends Controller
 
     public function template(Request $request): BinaryFileResponse
     {
-        $date = $request->input('date', now()->toDateString());
+        $validated = $request->validate([
+            'date' => 'nullable|date',
+        ]);
+
+        $date = $validated['date'] ?? now()->toDateString();
 
         $sheetName = now()->translatedFormat('d M');
 
@@ -26,11 +30,13 @@ class RetributionsExportController extends Controller
 
         $fileName = 'ERET_'.now()->format('Ymd_His').'.xlsx';
 
-        $tempFile = storage_path('app/temp/'.$fileName);
+        $tempDir = storage_path('app/temp');
 
-        if (! is_dir(dirname($tempFile))) {
-            mkdir(dirname($tempFile), 0755, true);
+        if (! is_dir($tempDir)) {
+            mkdir($tempDir, 0755, true);
         }
+
+        $tempFile = $tempDir.DIRECTORY_SEPARATOR.$fileName;
 
         $writer = new Xlsx($spreadsheet);
         $writer->save($tempFile);
