@@ -156,8 +156,6 @@ All routes are web-based (no API module yet). Key route groups:
 | `/rekap-harian` | `auth` | `RekapHarianController` |
 | `/bendel` | `auth` | `BendelController` |
 | `/ocr` | `auth` | `OcrController` |
-| `/reports` | `auth` | `ReportsController` |
-| `/backups` | `auth`, `role:admin` | `BackupController` |
 | `/users` | `auth`, `role:admin` | `UserController` |
 | `/markets` | `auth` | `MarketController` |
 | `/petugas` | `auth` | `PetugasController` |
@@ -193,7 +191,7 @@ php vendor/bin/pint          # Laravel Pint (code style)
 php vendor/bin/phpstan analyse --level=5 app routes   # Static analysis
 ```
 
-Current test count: **51 tests** (158 assertions)
+Current test count: **51 tests** (157 assertions)
 
 ---
 

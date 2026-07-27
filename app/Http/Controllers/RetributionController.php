@@ -6,7 +6,6 @@ use App\Exports\RetributionsExport;
 use App\Models\Market;
 use App\Models\Retribution;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
 class RetributionController extends Controller

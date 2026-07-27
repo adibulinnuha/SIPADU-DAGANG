@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Retribution;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class AggregateService
 {
@@ -55,7 +56,7 @@ class AggregateService
         $result = Retribution::query()
             ->selectRaw('COALESCE(SUM(COALESCE(item_totals.total, retributions.amount)), 0) as grand_total')
             ->leftJoin(
-                \DB::raw('(SELECT retribution_id, SUM(amount) as total FROM retribution_items GROUP BY retribution_id) as item_totals'),
+                DB::raw('(SELECT retribution_id, SUM(amount) as total FROM retribution_items GROUP BY retribution_id) as item_totals'),
                 'item_totals.retribution_id',
                 '=',
                 'retributions.id'
@@ -80,7 +81,7 @@ class AggregateService
         $result = Retribution::query()
             ->selectRaw('COALESCE(SUM(COALESCE(item_totals.total, retributions.amount)), 0) as monthly_total')
             ->leftJoin(
-                \DB::raw('(SELECT retribution_id, SUM(amount) as total FROM retribution_items GROUP BY retribution_id) as item_totals'),
+                DB::raw('(SELECT retribution_id, SUM(amount) as total FROM retribution_items GROUP BY retribution_id) as item_totals'),
                 'item_totals.retribution_id',
                 '=',
                 'retributions.id'
@@ -99,7 +100,7 @@ class AggregateService
             ->selectRaw('SUM(COALESCE(item_totals.total, retributions.amount)) as total_amount')
             ->leftJoin('markets as m', 'm.id', '=', 'retributions.market_id')
             ->leftJoin(
-                \DB::raw('(SELECT retribution_id, SUM(amount) as total FROM retribution_items GROUP BY retribution_id) as item_totals'),
+                DB::raw('(SELECT retribution_id, SUM(amount) as total FROM retribution_items GROUP BY retribution_id) as item_totals'),
                 'item_totals.retribution_id',
                 '=',
                 'retributions.id'
@@ -124,13 +125,13 @@ class AggregateService
             ->selectRaw('DATE(retribution_date) as date')
             ->selectRaw('COALESCE(SUM(COALESCE(item_totals.total, retributions.amount)), 0) as total')
             ->leftJoin(
-                \DB::raw('(SELECT retribution_id, SUM(amount) as total FROM retribution_items GROUP BY retribution_id) as item_totals'),
+                DB::raw('(SELECT retribution_id, SUM(amount) as total FROM retribution_items GROUP BY retribution_id) as item_totals'),
                 'item_totals.retribution_id',
                 '=',
                 'retributions.id'
             )
             ->where('retribution_date', '>=', $start)
-            ->groupBy(\DB::raw('DATE(retribution_date)'))
+            ->groupBy(DB::raw('DATE(retribution_date)'))
             ->orderBy('date')
             ->get()
             ->map(fn ($row) => [

@@ -49,7 +49,7 @@
 
 
     {{-- STATISTIK --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
 
 
         <div class="bg-white shadow rounded-xl p-5">
@@ -61,19 +61,6 @@
                 {{ $retributions->total() }}
             </h2>
         </div>
-
-
-
-        <div class="bg-white shadow rounded-xl p-5">
-            <p class="text-sm text-gray-500">
-                Hari Ini
-            </p>
-
-            <h2 class="text-3xl font-bold text-blue-600">
-                {{ $todayRetributionCount ?? 0 }}
-            </h2>
-        </div>
-
 
 
         <div class="bg-white shadow rounded-xl p-5">

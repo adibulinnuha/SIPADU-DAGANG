@@ -26,7 +26,7 @@ class UserController extends Controller
             'name' => 'required',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:8',
-            'role' => 'required',
+            'role' => 'required|in:admin,petugas',
         ]);
 
         User::create([
@@ -51,7 +51,7 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required',
             'email' => 'required|email',
-            'role' => 'required',
+            'role' => 'required|in:admin,petugas',
         ]);
 
         $user->update([

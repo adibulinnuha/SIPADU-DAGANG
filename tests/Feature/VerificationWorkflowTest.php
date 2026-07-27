@@ -241,14 +241,15 @@ test('invalid workflow transition from draft to verified via store is rejected',
     ]);
 
     // The WorkflowService throws an exception for invalid transitions.
-    // The controller's DB::transaction() will roll back and re-throw.
-    $this->withoutExceptionHandling();
-
-    expect(fn () => $this->post(route('verifications.store'), [
+    // The controller catches it gracefully and redirects back with an error flash.
+    $response = $this->post(route('verifications.store'), [
         'retribution_id' => $retribution->id,
         'nomor_setor' => 'INVALID/001',
         'tanggal_verifikasi' => now()->toDateString(),
-    ]))->toThrow(Exception::class, 'Perubahan status draft ke verified tidak diperbolehkan.');
+    ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHas('error', 'Perubahan status draft ke verified tidak diperbolehkan.');
 
     // Assert no legacy record was written due to transaction rollback
     $this->assertDatabaseMissing('verifications', [
