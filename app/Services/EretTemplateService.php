@@ -12,6 +12,14 @@ class EretTemplateService
         protected AggregateService $aggregateService
     ) {}
 
+    /**
+     * Generate spreadsheet from ERET template with daily recap data.
+     *
+     * @param string $sheetName Worksheet name to populate (e.g. "21 Jul")
+     * @param string $date      Date for aggregate data (Y-m-d)
+     *
+     * @throws \RuntimeException When template file is missing
+     */
     public function generate(string $sheetName, string $date): Spreadsheet
     {
         $template = config('eret.template');

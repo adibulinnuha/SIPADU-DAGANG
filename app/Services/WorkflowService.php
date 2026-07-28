@@ -63,7 +63,6 @@ class WorkflowService
      * Verify a retribution and store the nomor_setor in a single transactional call.
      * Replaces the core logic previously only in VerificationController::store().
      *
-     *
      * @throws \Exception
      */
     public function verifyWithNomorSetor(
@@ -76,9 +75,9 @@ class WorkflowService
             // Store the nomor_setor on the retribution record
             $retribution->update(['nomor_setor' => $nomorSetor]);
 
-            // Perform the workflow verify transition directly via changeStatus
-            // to avoid a nested transaction (verify() wraps its own DB::transaction).
-            // The optional catatan is stored as the description on the WorkflowLog entry.
+            // changeStatus wraps its own DB::transaction, but Laravel handles
+            // nested transactions via savepoints — the outermost transaction
+            // ensures atomic rollback if changeStatus throws.
             return $this->changeStatus($retribution, 'verified', 'VERIFY', $catatan);
         });
     }

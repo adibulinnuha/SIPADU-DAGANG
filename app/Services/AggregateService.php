@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Market;
 use App\Models\Retribution;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -140,6 +141,68 @@ class AggregateService
             ]);
 
         return $rows;
+    }
+
+    /**
+     * Get monthly totals for all active markets in a single grouped query.
+     * Eliminates N+1 queries from the previous per-market loop.
+     *
+     * @return Collection<int, array{market_id: int, market_name: string, total: float}>
+     */
+    public function getMarketsMonthlyTotals(string $date): Collection
+    {
+        $date = Carbon::parse($date);
+
+        return Retribution::query()
+            ->selectRaw('retributions.market_id')
+            ->selectRaw('COALESCE(m.name, ?) as market_name', ['Tanpa Pasar'])
+            ->selectRaw('COALESCE(SUM(COALESCE(item_totals.total, retributions.amount)), 0) as total')
+            ->join('markets as m', 'm.id', '=', 'retributions.market_id')
+            ->leftJoin(
+                DB::raw('(SELECT retribution_id, SUM(amount) as total FROM retribution_items GROUP BY retribution_id) as item_totals'),
+                'item_totals.retribution_id',
+                '=',
+                'retributions.id'
+            )
+            ->where('m.is_active', true)
+            ->whereMonth('retribution_date', $date->month)
+            ->whereYear('retribution_date', $date->year)
+            ->groupBy('retributions.market_id', 'm.name')
+            ->get()
+            ->map(fn ($row) => [
+                'market_id' => (int) $row->market_id,
+                'market_name' => $row->market_name,
+                'total' => (float) $row->total,
+            ]);
+    }
+
+    /**
+     * Get last month's totals for all markets in a single grouped query.
+     * Used to estimate monthly targets.
+     *
+     * @return Collection<int, array{market_id: int, total: float}>
+     */
+    public function getMarketsLastMonthTotals(string $date): Collection
+    {
+        $date = Carbon::parse($date)->subMonth();
+
+        return Retribution::query()
+            ->selectRaw('retributions.market_id')
+            ->selectRaw('COALESCE(SUM(COALESCE(item_totals.total, retributions.amount)), 0) as total')
+            ->leftJoin(
+                DB::raw('(SELECT retribution_id, SUM(amount) as total FROM retribution_items GROUP BY retribution_id) as item_totals'),
+                'item_totals.retribution_id',
+                '=',
+                'retributions.id'
+            )
+            ->whereMonth('retribution_date', $date->month)
+            ->whereYear('retribution_date', $date->year)
+            ->groupBy('retributions.market_id')
+            ->get()
+            ->map(fn ($row) => [
+                'market_id' => (int) $row->market_id,
+                'total' => (float) $row->total,
+            ]);
     }
 
     private function resolveRetributionTotal(Retribution $retribution): float

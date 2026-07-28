@@ -13,6 +13,11 @@ class RetributionsExportController extends Controller
         protected EretTemplateService $eretTemplateService
     ) {}
 
+    /**
+     * Download template ERET.
+     *
+     * @throws \RuntimeException
+     */
     public function template(Request $request): BinaryFileResponse
     {
         $validated = $request->validate([
