@@ -44,7 +44,6 @@ class VerificationController extends Controller
         try {
             DB::transaction(function () use ($validated) {
 
-                // Legacy write — create/update the verifications record
                 Verification::updateOrCreate(
                     ['retribution_id' => $validated['retribution_id']],
                     [
@@ -56,10 +55,16 @@ class VerificationController extends Controller
                     ]
                 );
 
-                // Dual-write — also advance the retribution workflow
                 $retribution = Retribution::findOrFail($validated['retribution_id']);
 
-                app(WorkflowService::class)->verifyWithNomorSetor(
+                $workflow = app(WorkflowService::class);
+
+                if ($retribution->status === 'draft') {
+                    $workflow->submit($retribution);
+                    $retribution->refresh();
+                }
+
+                $workflow->verifyWithNomorSetor(
                     $retribution,
                     $validated['nomor_setor'],
                     $validated['catatan'] ?? null
@@ -106,7 +111,6 @@ class VerificationController extends Controller
         try {
             DB::transaction(function () use ($validated, $verification) {
 
-                // Legacy write — update the verifications record
                 $verification->update([
                     'nomor_setor' => $validated['nomor_setor'],
                     'tanggal_verifikasi' => $validated['tanggal_verifikasi'],
@@ -115,18 +119,23 @@ class VerificationController extends Controller
                     'verified_by' => auth()->id(),
                 ]);
 
-                // Dual-write — only transition the retribution workflow when
-                // the legacy status is set to "Terverifikasi".
-                // The state machine does not support reverse transitions,
-                // so "Pending" updates are intentionally skipped.
                 if ($validated['status'] === 'Terverifikasi') {
                     $retribution = $verification->retribution;
 
-                    // Store the nomor_setor on the retribution record
-                    $retribution->update(['nomor_setor' => $validated['nomor_setor']]);
+                    $retribution->update([
+                        'nomor_setor' => $validated['nomor_setor'],
+                    ]);
 
-                    // Perform the workflow verify transition
-                    app(WorkflowService::class)->verify($retribution);
+                    $workflow = app(WorkflowService::class);
+
+                    if ($retribution->status === 'draft') {
+                        $workflow->submit($retribution);
+                        $retribution->refresh();
+                    }
+
+                    if ($retribution->status === 'submitted') {
+                        $workflow->verify($retribution);
+                    }
                 }
             });
         } catch (\Exception $e) {

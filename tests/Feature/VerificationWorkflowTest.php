@@ -57,35 +57,32 @@ test('verification store updates retribution workflow to verified with audit fie
     expect($legacy->verified_by)->toBe($user->id);
 });
 
-test('verification store rolls back both writes on failure', function () {
+test('verification store automatically submits draft before verifying', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
     $retribution = Retribution::factory()->create([
-        'status' => 'draft', // draft → verified will fail!
+        'status' => 'draft',
     ]);
 
-    // This should throw because draft cannot transition directly to verified
-    $this->withoutExceptionHandling();
+    $response = $this->post(route('verifications.store'), [
+        'retribution_id' => $retribution->id,
+        'nomor_setor' => '123/ABC/2026',
+        'tanggal_verifikasi' => now()->toDateString(),
+    ]);
 
-    try {
-        $this->post(route('verifications.store'), [
-            'retribution_id' => $retribution->id,
-            'nomor_setor' => '123/ABC/2026',
-            'tanggal_verifikasi' => now()->toDateString(),
-        ]);
-    } catch (Exception $e) {
-        expect($e->getMessage())->toContain('tidak diperbolehkan');
-    }
+    $response->assertRedirect(route('verifications.index'));
+    $response->assertSessionHas('success');
 
-    // Assert no legacy record was written (transaction rolled back)
-    $legacy = Verification::where('retribution_id', $retribution->id)->first();
-    expect($legacy)->toBeNull();
-
-    // Assert retribution was not modified
     $retribution->refresh();
-    expect($retribution->status)->toBe('draft');
-    expect($retribution->nomor_setor)->toBeNull();
+
+    expect($retribution->status)->toBe('verified');
+    expect($retribution->submitted_at)->not->toBeNull();
+    expect($retribution->verified_at)->not->toBeNull();
+
+    $this->assertDatabaseHas('verifications', [
+        'retribution_id' => $retribution->id,
+    ]);
 });
 
 // ---------------------------------------------------------------------------
@@ -229,37 +226,31 @@ test('verification can be deleted', function () {
 });
 
 // ---------------------------------------------------------------------------
-// Invalid workflow transitions are rejected
-// ---------------------------------------------------------------------------
 
-test('invalid workflow transition from draft to verified via store is rejected', function () {
+test('verification store from draft automatically submits before verify', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
     $retribution = Retribution::factory()->create([
-        'status' => 'draft', // Cannot go directly to verified
+        'status' => 'draft',
     ]);
 
-    // The WorkflowService throws an exception for invalid transitions.
-    // The controller catches it gracefully and redirects back with an error flash.
     $response = $this->post(route('verifications.store'), [
         'retribution_id' => $retribution->id,
-        'nomor_setor' => 'INVALID/001',
+        'nomor_setor' => 'AUTO/001',
         'tanggal_verifikasi' => now()->toDateString(),
     ]);
 
-    $response->assertRedirect();
-    $response->assertSessionHas('error', 'Perubahan status draft ke verified tidak diperbolehkan.');
+    $response->assertRedirect(route('verifications.index'));
+    $response->assertSessionHas('success');
 
-    // Assert no legacy record was written due to transaction rollback
-    $this->assertDatabaseMissing('verifications', [
+    $retribution->refresh();
+
+    expect($retribution->status)->toBe('verified');
+
+    $this->assertDatabaseHas('verifications', [
         'retribution_id' => $retribution->id,
     ]);
-
-    // Assert retribution was not modified
-    $retribution->refresh();
-    expect($retribution->status)->toBe('draft');
-    expect($retribution->nomor_setor)->toBeNull();
 });
 
 test('existing WorkflowRegressionTest still passes', function () {
