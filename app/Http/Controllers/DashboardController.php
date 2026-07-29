@@ -231,48 +231,4 @@ class DashboardController extends Controller
         ));
     }
 
-    /**
-     * Get a market's total revenue for the current month.
-     */
-    private function getMarketMonthlyTotal(int $marketId, \Carbon\Carbon $today): float
-    {
-        return (float) Retribution::query()
-            ->selectRaw('COALESCE(SUM(COALESCE(item_totals.total, retributions.amount)), 0) as total')
-            ->leftJoin(
-                DB::raw('(SELECT retribution_id, SUM(amount) as total FROM retribution_items GROUP BY retribution_id) as item_totals'),
-                'item_totals.retribution_id',
-                '=',
-                'retributions.id'
-            )
-            ->where('market_id', $marketId)
-            ->whereMonth('retribution_date', $today->month)
-            ->whereYear('retribution_date', $today->year)
-            ->value('total');
-    }
-
-    /**
-     * Estimate a market's monthly target using last month's actuals.
-     */
-    private function getMarketMonthlyTarget(int $marketId, \Carbon\Carbon $today, float $currentRealization): float
-    {
-        $lastMonthTotal = (float) Retribution::query()
-            ->selectRaw('COALESCE(SUM(COALESCE(item_totals.total, retributions.amount)), 0) as total')
-            ->leftJoin(
-                DB::raw('(SELECT retribution_id, SUM(amount) as total FROM retribution_items GROUP BY retribution_id) as item_totals'),
-                'item_totals.retribution_id',
-                '=',
-                'retributions.id'
-            )
-            ->where('market_id', $marketId)
-            ->whereMonth('retribution_date', $today->copy()->subMonth()->month)
-            ->whereYear('retribution_date', $today->copy()->subMonth()->year)
-            ->value('total');
-
-        if ($lastMonthTotal > 0) {
-            return $lastMonthTotal;
-        }
-
-        // Fallback: estimate 10% above current as target
-        return $currentRealization > 0 ? round($currentRealization * 1.1, 2) : 1000000;
-    }
 }

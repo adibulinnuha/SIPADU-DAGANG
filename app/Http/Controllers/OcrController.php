@@ -38,26 +38,19 @@ class OcrController extends Controller
         */
 
         $ocrData = [
-
             'nomor_setor' => 'ETK-000123',
-
             'tanggal' => now()->format('Y-m-d'),
-
             'pasar' => 'KARIMATA 1',
-
             'jenis_retribusi' => 'Kios',
-
             'nominal' => 5000,
-
             'image' => $path,
-
         ];
 
-        return view('ocr.review', [
+        session(['ocr_result' => $ocrData]);
 
-            'ocr' => $ocrData,
-
-        ]);
+        return redirect()
+            ->route('ocr.index')
+            ->with('ocr_result', $ocrData);
 
     }
 
@@ -72,37 +65,26 @@ class OcrController extends Controller
     public function store(Request $request)
     {
 
-        $request->validate([
-
-            'tanggal' => 'required',
-
-            'pasar' => 'required',
-
-            'jenis_retribusi' => 'required',
-
-            'nominal' => 'required|numeric',
-
+        $validated = $request->validate([
+            'tanggal' => 'required|date',
+            'pasar' => 'required|string',
+            'jenis_retribusi' => 'required|string|max:100',
+            'nominal' => 'required|numeric|min:0',
+            'nomor_setor' => 'nullable|string|max:100',
         ]);
 
-        $market = Market::where('name', $request->pasar)
+        $market = Market::where('name', $validated['pasar'])
             ->first();
 
         Retribution::create([
-
             'market_id' => $market?->id,
-
-            'jenis_retribusi' => $request->jenis_retribusi,
-
-            'amount' => $request->nominal,
-
-            'retribution_date' => $request->tanggal,
-
+            'jenis_retribusi' => $validated['jenis_retribusi'],
+            'amount' => $validated['nominal'],
+            'nomor_setor' => $validated['nomor_setor'] ?? null,
+            'retribution_date' => $validated['tanggal'],
             'payment_method' => 'OCR',
-
             'notes' => 'Input melalui OCR e-Ticketing',
-
             'recorded_by' => auth()->id(),
-
         ]);
 
         return redirect()

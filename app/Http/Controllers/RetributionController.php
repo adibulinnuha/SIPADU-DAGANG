@@ -21,12 +21,12 @@ class RetributionController extends Controller
             $query->where('market_id', $request->market_id);
         }
 
-        if ($request->filled('date_start')) {
-            $query->whereDate('retribution_date', '>=', $request->date_start);
+        if ($request->filled('start_date')) {
+            $query->whereDate('retribution_date', '>=', $request->start_date);
         }
 
-        if ($request->filled('date_end')) {
-            $query->whereDate('retribution_date', '<=', $request->date_end);
+        if ($request->filled('end_date')) {
+            $query->whereDate('retribution_date', '<=', $request->end_date);
         }
 
         $aggregate = (clone $query)

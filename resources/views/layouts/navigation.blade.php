@@ -3,13 +3,30 @@
     <div class="flex items-center justify-between px-6 py-4">
 
 
-        <!-- Judul -->
+        <!-- Judul Dinamis -->
 
         <div>
 
             <h2 class="text-xl font-bold text-slate-800">
 
-                Dashboard
+                @php
+                    $pageTitle = match(true) {
+                        request()->routeIs('dashboard')          => 'Dashboard',
+                        request()->routeIs('markets.*')          => 'Master Pasar',
+                        request()->routeIs('retributions.*')     => 'Retribusi',
+                        request()->routeIs('petugas.*')          => 'Petugas',
+                        request()->routeIs('verifications.*')    => 'Verifikasi',
+                        request()->routeIs('bendel.*')           => 'Bendel',
+                        request()->routeIs('bendels.*')          => 'Bendel',
+                        request()->routeIs('rekap-harian.*')     => 'Rekap Harian',
+                        request()->routeIs('ocr.*')              => 'OCR e-Ticketing',
+                        request()->routeIs('users.*')            => 'Pengguna',
+                        request()->routeIs('profile.*')          => 'Profil',
+                        default                                  => 'SIPADU-DAGANG',
+                    };
+                @endphp
+
+                {{ $pageTitle }}
 
             </h2>
 
@@ -22,7 +39,7 @@
 
                 <p class="text-sm text-slate-500">
 
-                    SIPADU-DAGANG • Sistem Aktif
+                    SIPADU-DAGANG • {{ $pageTitle }}
 
                 </p>
 
@@ -55,7 +72,7 @@
 
                 <p class="text-xs text-slate-500">
 
-                    Administrator
+                    {{ auth()->user()->role?->label() ?? auth()->user()->role }}
 
                 </p>
 

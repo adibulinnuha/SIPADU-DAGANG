@@ -108,6 +108,15 @@
 
         </a>
 
+        <a href="{{ route('rekap-harian.index') }}"
+           class="flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200
+           {{ request()->routeIs('rekap-harian.*') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
+
+            <span class="text-lg">📊</span>
+            <span>Rekap Harian</span>
+
+        </a>
+
         <a href="{{ route('users.index') }}"
            class="flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200
            {{ request()->routeIs('users.*') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
