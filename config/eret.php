@@ -78,4 +78,26 @@ return [
 
     'bendel_source' => env('BENDEL_SOURCE', 'legacy'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | ERET Engine Configuration
+    |--------------------------------------------------------------------------
+    | Konfigurasi untuk ERET Engine V1.1.
+    |
+    | dynamic_mapping: Gunakan scanning dinamis untuk menemukan pasar & kolom.
+    |   Jika true, engine membaca struktur workbook secara langsung.
+    |   Jika false, gunakan mapping statis dari market_rows dan columns di atas.
+    |
+    | strict_validation: Jika true, engine akan throw exception saat mapping gagal.
+    |   Jika false, engine hanya log warning dan lanjutkan proses.
+    |
+    | dry_run: Jika true, engine hanya membaca & mapping tanpa menyimpan workbook.
+    */
+
+    'engine' => [
+        'dynamic_mapping' => env('ERET_DYNAMIC_MAPPING', true),
+        'strict_validation' => env('ERET_STRICT_VALIDATION', false),
+        'dry_run' => env('ERET_DRY_RUN', false),
+    ],
+
 ];
