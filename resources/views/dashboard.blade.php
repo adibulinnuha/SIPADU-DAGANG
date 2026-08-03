@@ -1,4 +1,22 @@
-<x-layouts.app title="Dashboard">
+ <x-layouts.app title="Dashboard">
+
+@php
+    // Helper untuk membangun URL sorting pada Tabel ERET Harian.
+    // Mempertahankan filter aktif (tanggal, market_id, q).
+    if (! function_exists('eretSortUrl')) {
+        function eretSortUrl(string $col, string $currentSort, string $currentDir): string
+        {
+            $dir = ($col === $currentSort && $currentDir === 'asc') ? 'desc' : 'asc';
+
+            $params = array_merge(
+                request()->except(['sort', 'dir', 'page']),
+                ['sort' => $col, 'dir' => $dir]
+            );
+
+            return url()->current().'?'.http_build_query($params);
+        }
+    }
+@endphp
 
 <!-- Chart.js CDN -->
 @push('styles')
@@ -14,6 +32,182 @@
     .stat-value { font-variant-numeric: tabular-nums; }
     @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     .pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
+
+    /* ── Spreadsheet ERET ──────────────────────────────── */
+    .eret-scroll {
+        overflow: auto;
+        max-height: 560px;
+        position: relative;
+        border-bottom: 1px solid rgb(226 232 240);
+    }
+    .dark .eret-scroll {
+        border-bottom-color: rgb(51 65 85 / 0.5);
+    }
+    .eret-table {
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 100%;
+        background: #fff;
+        font-size: 0.8125rem;
+    }
+    .dark .eret-table {
+        background: #1e293b;
+    }
+    .eret-table thead th {
+        background: #f1f5f9;
+        color: #475569;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.6875rem;
+        letter-spacing: 0.05em;
+        padding: 12px 14px;
+        white-space: nowrap;
+        border-bottom: 2px solid #cbd5e1;
+        border-right: 1px solid #e2e8f0;
+        text-align: left;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .dark .eret-table thead th {
+        background: #334155;
+        color: #cbd5e1;
+        border-bottom-color: #475569;
+        border-right-color: #475569;
+    }
+    .eret-table tbody td,
+    .eret-table tfoot td {
+        padding: 10px 14px;
+        white-space: nowrap;
+        border-bottom: 1px solid #f1f5f9;
+        border-right: 1px solid #e2e8f0;
+        text-align: left;
+        vertical-align: middle;
+    }
+    .dark .eret-table tbody td,
+    .dark .eret-table tfoot td {
+        border-bottom-color: #334155;
+        border-right-color: #334155;
+    }
+    .eret-table tbody tr:nth-child(even) {
+        background: #f8fafc;
+    }
+    .dark .eret-table tbody tr:nth-child(even) {
+        background: #1e293b;
+    }
+    .eret-table tbody tr:hover {
+        background: #eff6ff;
+    }
+    .dark .eret-table tbody tr:hover {
+        background: #172554;
+    }
+    .eret-num {
+        text-align: right !important;
+        font-variant-numeric: tabular-nums;
+    }
+    .eret-text {
+        color: #334155;
+    }
+    .dark .eret-text {
+        color: #e2e8f0;
+    }
+    .eret-date {
+        color: #64748b;
+    }
+    .dark .eret-date {
+        color: #94a3b8;
+    }
+    .eret-total {
+        background: #fefce8 !important;
+        font-weight: 700;
+    }
+    .dark .eret-total {
+        background: #3f3f46 !important;
+    }
+    .eret-footer td {
+        background: #e2e8f0 !important;
+        color: #0f172a;
+        font-weight: 700;
+        border-top: 2px solid #94a3b8;
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+    }
+    .dark .eret-footer td {
+        background: #475569 !important;
+        color: #f1f5f9;
+        border-top-color: #64748b;
+    }
+    /* Kolom pertama (No) sticky */
+    .eret-sticky-col {
+        position: sticky;
+        left: 0;
+        z-index: 8;
+        background: #f8fafc;
+        font-weight: 600;
+        color: #64748b;
+        min-width: 48px;
+        text-align: center !important;
+    }
+    .dark .eret-sticky-col {
+        background: #1e293b;
+        color: #94a3b8;
+    }
+    .eret-table thead .eret-sticky-col {
+        z-index: 20;
+        background: #f1f5f9;
+    }
+    .dark .eret-table thead .eret-sticky-col {
+        background: #334155;
+    }
+    .eret-table tfoot .eret-sticky-col {
+        z-index: 20;
+        background: #e2e8f0;
+    }
+    .dark .eret-table tfoot .eret-sticky-col {
+        background: #475569;
+    }
+    /* Sortable headers */
+    .eret-sortable a {
+        color: inherit;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .eret-sortable a:hover {
+        color: #2563eb;
+    }
+    .eret-sortable a::after {
+        content: '';
+        width: 0;
+        height: 0;
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        border-top: 5px solid #94a3b8;
+        opacity: 0.5;
+    }
+    .eret-sorted a {
+        color: #2563eb;
+    }
+    .eret-sorted a::after {
+        border-top-color: #2563eb;
+        opacity: 1;
+    }
+    .eret-sorted[data-dir='asc'] a::after {
+        transform: rotate(180deg);
+    }
+.eret-empty {
+        color: #64748b;
+    }
+    .eret-selected {
+        outline: 2px solid #2563eb;
+        outline-offset: -2px;
+        background-color: #dbeafe !important;
+    }
+    .dark .eret-selected {
+        background-color: #1e3a8a !important;
+    }
 </style>
 @endpush
 
@@ -134,8 +328,211 @@
                 </span>
             </div>
         </div>
-        @endforeach
+@endforeach
 
+    </div>
+
+    {{-- ================================================================ --}}
+    {{-- 2b. FILTER DASHBOARD ERET --}}
+    {{-- ================================================================ --}}
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <form method="GET" action="{{ route('dashboard') }}" class="flex flex-wrap items-end gap-4">
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Tanggal</label>
+                <input type="date" name="tanggal" value="{{ $filters['tanggal'] }}"
+                       class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white">
+            </div>
+
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Pasar</label>
+                <select name="market_id" class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white">
+                    <option value="">Semua Pasar</option>
+                    @foreach($markets as $market)
+                    <option value="{{ $market->id }}" @selected($filters['market_id'] == $market->id)>
+                        {{ $market->name }}
+                    </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="min-w-[220px] flex-1">
+                <label class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Pencarian</label>
+                <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Pasar, Nomor Setor, atau Petugas..."
+                       class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white">
+            </div>
+
+            <div class="flex gap-3">
+                <button class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow transition hover:bg-blue-700 active:scale-95">
+                    Terapkan
+                </button>
+                <a href="{{ route('dashboard') }}"
+                   class="rounded-lg bg-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    {{-- ================================================================ --}}
+    {{-- 2c. TABEL ERET HARIAN (SPREADSHEET) --}}
+    {{-- ================================================================ --}}
+    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+            <div>
+                <h3 class="text-lg font-bold text-slate-800 dark:text-white">Tabel ERET Harian</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Spreadsheet retribusi {{ \Carbon\Carbon::parse($filters['tanggal'])->translatedFormat('l, d F Y') }}
+                </p>
+            </div>
+            <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                {{ $eretTransactions->total() }} transaksi
+            </span>
+        </div>
+
+        <div class="eret-scroll">
+            <table class="eret-table w-full text-sm">
+                <thead>
+                    <tr>
+                        <th class="eret-sticky-col eret-no">No</th>
+                        <th class="eret-sortable {{ $sort === 'market_name' ? 'eret-sorted' : '' }}" {{ $sort === 'market_name' ? 'data-dir='.$dir : '' }}>
+                            <a href="{{ eretSortUrl('market_name', $sort, $dir) }}">Pasar</a>
+                        </th>
+                        <th class="eret-sortable {{ $sort === 'petugas' ? 'eret-sorted' : '' }}" {{ $sort === 'petugas' ? 'data-dir='.$dir : '' }}>
+                            <a href="{{ eretSortUrl('petugas', $sort, $dir) }}">Petugas</a>
+                        </th>
+                        <th class="eret-sortable {{ $sort === 'nomor_setor' ? 'eret-sorted' : '' }}" {{ $sort === 'nomor_setor' ? 'data-dir='.$dir : '' }}>
+                            <a href="{{ eretSortUrl('nomor_setor', $sort, $dir) }}">Nomor Setor</a>
+                        </th>
+                        <th class="eret-sortable {{ $sort === 'retribution_date' ? 'eret-sorted' : '' }}" {{ $sort === 'retribution_date' ? 'data-dir='.$dir : '' }}>
+                            <a href="{{ eretSortUrl('retribution_date', $sort, $dir) }}">Tanggal</a>
+                        </th>
+                        @foreach($colKeys as $colKey)
+                        <th class="eret-num">{{ $dashboardColumns[$colKey]['label'] }}</th>
+                        @endforeach
+                        <th class="eret-sortable eret-num eret-total {{ $sort === 'total' ? 'eret-sorted' : '' }}" {{ $sort === 'total' ? 'data-dir='.$dir : '' }}>
+                            <a href="{{ eretSortUrl('total', $sort, $dir) }}">Total</a>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($eretTransactions as $row)
+                    <tr>
+                        <td class="eret-sticky-col eret-no">{{ $eretTransactions->firstItem() + $loop->index }}</td>
+                        <td class="eret-cell eret-text">{{ $row['market'] }}</td>
+                        <td class="eret-cell eret-text">{{ $row['petugas'] }}</td>
+                        <td class="eret-cell eret-text">{{ $row['nomor_setor'] }}</td>
+                        <td class="eret-cell eret-date">{{ $row['tanggal'] ? $row['tanggal']->translatedFormat('d F Y') : '-' }}</td>
+                        @foreach($colKeys as $colKey)
+                        <td class="eret-cell eret-num">{{ $row['values'][$colKey] > 0 ? 'Rp ' . number_format($row['values'][$colKey],0,',','.') : '-' }}</td>
+                        @endforeach
+                        <td class="eret-cell eret-num eret-total font-bold">Rp {{ number_format($row['total'],0,',','.') }}</td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="{{ 5 + count($colKeys) + 1 }}" class="eret-cell eret-empty text-center">
+                            <div class="flex flex-col items-center gap-2 py-10">
+                                <svg class="h-8 w-8 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5v11a2 2 0 01-2 2z"/>
+                                </svg>
+                                <span>Belum ada data retribusi pada tanggal ini.</span>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+                <tfoot>
+                    <tr class="eret-footer">
+                        <td class="eret-sticky-col eret-no" colspan="1">&nbsp;</td>
+                        <td class="eret-cell eret-text" colspan="4">TOTAL SELURUH PASAR</td>
+                        @foreach($colKeys as $colKey)
+                        <td class="eret-cell eret-num">{{ $grandTotals[$colKey] > 0 ? 'Rp ' . number_format($grandTotals[$colKey],0,',','.') : '-' }}</td>
+                        @endforeach
+                        <td class="eret-cell eret-num eret-total font-bold">Rp {{ number_format($grandTotal,0,',','.') }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="border-t border-slate-200 px-6 py-4 dark:border-slate-700">
+            {{ $eretTransactions->links() }}
+        </div>
+    </div>
+
+    {{-- ================================================================ --}}
+    {{-- 2d. TABEL REKAP --}}
+    {{-- ================================================================ --}}
+    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+            <div>
+                <h3 class="text-lg font-bold text-slate-800 dark:text-white">Rekap Per Pasar</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Ringkasan transaksi & status workflow per pasar</p>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                <thead class="bg-slate-100 dark:bg-slate-700/50">
+                    <tr>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Pasar</th>
+                        <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Jumlah Transaksi</th>
+                        <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Retribusi</th>
+                        <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status Workflow</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    @forelse($rekapRows as $rekap)
+                    <tr class="transition hover:bg-slate-50 dark:hover:bg-slate-700/30">
+                        <td class="px-5 py-4 text-sm font-medium text-slate-800 dark:text-white">
+                            <div class="flex items-center gap-2">
+                                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-sm font-bold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                                    {{ strtoupper(substr($rekap['market'], 0, 1)) }}
+                                </span>
+                                {{ $rekap['market'] }}
+                            </div>
+                        </td>
+                        <td class="px-5 py-4 text-right text-sm font-semibold text-slate-800 dark:text-white">
+                            {{ number_format($rekap['total_transaksi']) }}
+                        </td>
+                        <td class="px-5 py-4 text-right text-sm font-bold text-slate-800 dark:text-white">
+                            Rp {{ number_format($rekap['total_retribusi'],0,',','.') }}
+                        </td>
+                        <td class="px-5 py-4">
+                            <div class="flex flex-wrap items-center justify-center gap-1.5">
+                                @php
+                                    $wfBadges = [
+                                        'draft' => ['Draft', 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'],
+                                        'submitted' => ['Submitted', 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'],
+                                        'verified' => ['Verified', 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'],
+                                        'approved' => ['Approved', 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'],
+                                        'locked' => ['Locked', 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'],
+                                    ];
+                                @endphp
+                                @foreach($rekap['status'] as $statusKey => $count)
+                                    @if($count > 0)
+                                        @php $badge = $wfBadges[$statusKey] ?? [$statusKey, 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300']; @endphp
+                                        <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase {{ $badge[1] }}">
+                                            {{ $badge[0] }} · {{ $count }}
+                                        </span>
+                                    @endif
+                                @endforeach
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="4" class="px-5 py-10 text-center text-slate-500 dark:text-slate-400">
+                            <div class="flex flex-col items-center gap-2">
+                                <svg class="h-8 w-8 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5v11a2 2 0 01-2 2z"/>
+                                </svg>
+                                <span>Belum ada data rekap.</span>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
     {{-- ================================================================ --}}
@@ -539,6 +936,93 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+    // ─── Keyboard-friendly eret spreadsheet navigation ─────────
+    const eretTables = document.querySelectorAll('.eret-scroll');
+    eretTables.forEach(function (scrollEl) {
+        const tbody = scrollEl.querySelector('tbody');
+        if (!tbody) return;
+
+        // Highlight a cell (Excel-like "selected range" effect)
+        const clearSelection = function () {
+            tbody.querySelectorAll('td.eret-selected').forEach(function (td) {
+                td.classList.remove('eret-selected');
+            });
+        };
+
+        const selectCell = function (td) {
+            clearSelection();
+            td.classList.add('eret-selected');
+            // Keep the focused cell in view horizontally
+            const container = scrollEl;
+            const left = td.offsetLeft;
+            const right = left + td.offsetWidth;
+            if (left < container.scrollLeft) {
+                container.scrollLeft = left;
+            } else if (right > container.scrollLeft + container.clientWidth) {
+                container.scrollLeft = right - container.clientWidth;
+            }
+        };
+
+        // Convert table cells into a matrix for arrow-key navigation
+        const getMatrix = function () {
+            const rows = Array.from(tbody ? tbody.querySelectorAll('tr') : []);
+            return rows.map(function (row) {
+                return Array.from(row.querySelectorAll('td'));
+            });
+        };
+
+        const cellPos = function (matrix, td) {
+            for (let r = 0; r < matrix.length; r++) {
+                const cIdx = matrix[r].indexOf(td);
+                if (cIdx !== -1) return { r: r, c: cIdx };
+            }
+            return null;
+        };
+
+        tbody.addEventListener('click', function (e) {
+            const td = e.target.closest('td');
+            if (td) selectCell(td);
+        });
+
+        document.addEventListener('keydown', function (e) {
+            const active = tbody.querySelector('td.eret-selected');
+            if (!active) return;
+
+            const matrix = getMatrix();
+            const pos = cellPos(matrix, active);
+            if (!pos) return;
+
+            let nr = pos.r;
+            let nc = pos.c;
+
+            switch (e.key) {
+                case 'ArrowUp': nr--; break;
+                case 'ArrowDown': nr++; break;
+                case 'ArrowLeft': nc--; break;
+                case 'ArrowRight': nc++; break;
+                case 'Home':
+                    e.preventDefault();
+                    selectCell(matrix[pos.r][0]);
+                    return;
+                case 'End':
+                    e.preventDefault();
+                    selectCell(matrix[pos.r][matrix[pos.r].length - 1]);
+                    return;
+                case 'Enter':
+                    e.preventDefault();
+                    nr++;
+                    break;
+                default:
+                    return;
+            }
+
+            if (nr < 0 || nr >= matrix.length || nc < 0 || nc >= matrix[nr].length) return;
+            e.preventDefault();
+            selectCell(matrix[nr][nc]);
+        });
+    });
+
     const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const gridColor = isDark ? 'rgba(148,163,184,0.1)' : 'rgba(148,163,184,0.2)';
     const textColor = isDark ? '#94a3b8' : '#64748b';

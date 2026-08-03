@@ -44,37 +44,45 @@ class ValidationReportTest extends TestCase
     }
 
     public function test_adds_warning_entry()
-    {
-        $report = new ValidationReport();
-        $report->addWarning('Pasar Tidak Ada', 'tidak ditemukan di template');
+{
+    $report = new ValidationReport();
+    $report->addWarning('Pasar Tidak Ada', 'tidak ditemukan di template');
 
-        $this->assertEquals(1, $report->getTotalCount());
-        $this->assertEquals(0, $report->getSuccessCount());
-        $this->assertEquals(1, $report->getWarningCount());
-        $this->assertEquals(0, $report->getErrorCount());
-        $this->assertTrue($report->isValid()); // warnings don't make it invalid
-        $this->assertEquals('Valid (with warnings)', $report->getWorkbookStatus());
+    $this->assertEquals(1, $report->getTotalCount());
+    $this->assertEquals(0, $report->getSuccessCount());
+    $this->assertEquals(1, $report->getWarningCount());
+    $this->assertEquals(0, $report->getErrorCount());
+    $this->assertTrue($report->isValid()); // warnings don't make it invalid
+    $this->assertEquals('Valid (with warnings)', $report->getWorkbookStatus());
 
-        $warnings = $report->getWarnings();
-        $this->assertCount(1, $warnings);
-        $this->assertEquals('tidak ditemukan di template', $warnings[0]['message']);
-    }
+    $warnings = $report->getWarnings();
+    $this->assertCount(1, $warnings);
+
+    $this->assertEquals(
+        '⚠ Pasar Tidak Ada → tidak ditemukan di template',
+        $warnings[0]['message']
+    );
+}
 
     public function test_adds_error_entry()
-    {
-        $report = new ValidationReport();
-        $report->addError('System', 'Terjadi kesalahan');
+{
+    $report = new ValidationReport();
+    $report->addError('System', 'Terjadi kesalahan');
 
-        $this->assertEquals(1, $report->getTotalCount());
-        $this->assertEquals(0, $report->getSuccessCount());
-        $this->assertEquals(0, $report->getWarningCount());
-        $this->assertEquals(1, $report->getErrorCount());
-        $this->assertFalse($report->isValid());
-        $this->assertEquals('Invalid', $report->getWorkbookStatus());
+    $this->assertEquals(1, $report->getTotalCount());
+    $this->assertEquals(0, $report->getSuccessCount());
+    $this->assertEquals(0, $report->getWarningCount());
+    $this->assertEquals(1, $report->getErrorCount());
+    $this->assertFalse($report->isValid());
+    $this->assertEquals('Invalid', $report->getWorkbookStatus());
 
-        $errors = $report->getErrors();
-        $this->assertCount(1, $errors);
-        $this->assertEquals('Terjadi kesalahan', $errors[0]['message']);
+    $errors = $report->getErrors();
+    $this->assertCount(1, $errors);
+
+    $this->assertEquals(
+        '✘ System → Terjadi kesalahan',
+        $errors[0]['message']
+    );
     }
 
     public function test_filters_entries_by_status()

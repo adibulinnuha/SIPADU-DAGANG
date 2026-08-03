@@ -283,8 +283,8 @@ class PixelPerfectValidationTest extends TestCase
         [$templateSpreadsheet, $templateSheet, $outputSpreadsheet, $outputSheet] = $this->getTemplateAndOutputSheet('2026-07-01');
 
         // Compare print area
-        $templatePrintArea = $templateSheet->getPrintArea();
-        $outputPrintArea = $outputSheet->getPrintArea();
+        $templatePrintArea = $templateSheet->getPageSetup()->getPrintArea();
+        $outputPrintArea = $outputSheet->getPageSetup()->getPrintArea();
         $this->assertEquals($templatePrintArea, $outputPrintArea,
             'Print area harus identik dengan template');
 

@@ -59,6 +59,34 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Kolom Dashboard ERET (Spreadsheet)
+    |--------------------------------------------------------------------------
+    | Mapping kolom tabel ERET Harian di dashboard ke sumber jenis_retribusi.
+    | Kolom 'Sampah' bersumber dari jenis_retribusi 'kebersihan' (sesuai template ERET).
+    | Ubah daftar ini jika template ERET berubah di masa depan.
+    */
+
+    'dashboard_columns' => [
+
+        'kios' => ['label' => 'Kios', 'sources' => ['kios']],
+        'los' => ['label' => 'Los', 'sources' => ['los']],
+        'dasaran' => ['label' => 'Dasaran', 'sources' => ['dasaran_terbuka', 'dasaran terbuka']],
+        'mck' => ['label' => 'MCK', 'sources' => ['mck']],
+        'sampah' => ['label' => 'Sampah', 'sources' => ['kebersihan']],
+        'listrik' => ['label' => 'Listrik', 'sources' => ['listrik']],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pagination Dashboard ERET
+    |--------------------------------------------------------------------------
+    */
+
+    'dashboard_per_page' => 15,
+
+    /*
+    |--------------------------------------------------------------------------
     | Format Angka
     |--------------------------------------------------------------------------
     */
