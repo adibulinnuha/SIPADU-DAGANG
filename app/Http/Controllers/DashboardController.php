@@ -277,11 +277,12 @@ class DashboardController extends Controller
         $perPage = (int) config('eret.dashboard_per_page', 15);
         $eretTransactions = $eretQuery->paginate($perPage)->withQueryString();
 
-        // --- Map each transaction to spreadsheet columns ---
+// --- Map each transaction to spreadsheet columns ---
         $dashboardColumns = config('eret.dashboard_columns', []);
         $colKeys = array_keys($dashboardColumns);
 
-$eretRows = $eretTransactions->getCollection()->map(function (Retribution $retribution) use ($colKeys, $dashboardColumns) {
+        // Map a single Retribution to its flattened spreadsheet row array.
+        $mapToRow = function (Retribution $retribution) use ($colKeys, $dashboardColumns) {
             // Build lookup: jenis_retribusi -> amount (from items or fallback)
             $itemAmounts = [];
             $total = 0.0;
@@ -308,43 +309,67 @@ $eretRows = $eretTransactions->getCollection()->map(function (Retribution $retri
                 $values[$colKey] = $value;
             }
 
-            return [
+            $flattened = [
                 'id' => $retribution->id,
-                'market' => $retribution->market?->name ?? '-',
-                'petugas' => $retribution->recorder?->name ?? '-',
-                'nomor_setor' => $retribution->nomor_setor ?? '-',
-                'tanggal' => $retribution->retribution_date,
-                'status' => $retribution->status,
-                'values' => $values,
-                'total' => $total,
+                'market_id' => $retribution->market_id,
+                'petugas_id' => $retribution->recorded_by,
+                'nomor_setor' => $retribution->nomor_setor ?? '',
+                'entry_type' => $retribution->entry_type ?? 'manual',
             ];
-        });
 
-        $eretTransactions = $eretTransactions->setCollection($eretRows);
+            foreach ($values as $k => $v) {
+                $flattened[$k] = $v;
+            }
 
-        // --- Footer Grand Total (all matching records, not just page) ---
-        $grandTotalQuery = Retribution::query()
-            ->whereDate('retribution_date', $filters['tanggal']);
+            return $flattened;
+        };
 
-        if ($filters['market_id']) {
-            $grandTotalQuery->where('market_id', $filters['market_id']);
-        }
+        // Split the paginated collection into two independent worksheet groups.
+        $manualTransactions = $eretTransactions->getCollection()
+            ->where('entry_type', '!=', 'eret')
+            ->values();
+        $eretTransactionsGroup = $eretTransactions->getCollection()
+            ->where('entry_type', 'eret')
+            ->values();
 
-        if ($filters['q']) {
-            $grandTotalQuery->where(function ($query) use ($filters) {
-                $query->whereHas('market', fn ($q) => $q->where('name', 'like', "%{$filters['q']}%"))
-                    ->orWhere('nomor_setor', 'like', "%{$filters['q']}%")
-                    ->orWhereHas('recorder', fn ($q) => $q->where('name', 'like', "%{$filters['q']}%"));
-            });
-        }
+        $eretTransactions = $eretTransactions->setCollection($manualTransactions);
 
-        // Build per-column grand totals for the footer (Excel-style).
-        $grandTotals = array_fill_keys($colKeys, 0.0);
-        $grandTotal = 0.0;
+        // Flattened rows for the Alpine spreadsheets (independent per table).
+        $manualSpreadsheetRows = $manualTransactions->map($mapToRow)->values();
+        $eretSpreadsheetRows = $eretTransactionsGroup->map($mapToRow)->values();
 
-$grandTotalQuery->with('items')
-            ->get()
-            ->each(function (Retribution $retribution) use (&$grandTotals, &$grandTotal, $colKeys, $dashboardColumns) {
+        // --- Footer Grand Totals (all matching records, not just page) ---
+        // Build a helper that computes per-column totals for a given group.
+        $buildGroupTotals = function (string $group) use ($filters, $colKeys, $dashboardColumns) {
+            $query = Retribution::query()
+                ->with('items')
+                ->whereDate('retribution_date', $filters['tanggal']);
+
+            if ($group === 'eret') {
+                $query->where('entry_type', 'eret');
+            } else {
+                $query->where(function ($q) {
+                    $q->where('entry_type', 'manual')
+                        ->orWhereNull('entry_type');
+                });
+            }
+
+            if ($filters['market_id']) {
+                $query->where('market_id', $filters['market_id']);
+            }
+
+            if ($filters['q']) {
+                $query->where(function ($q) use ($filters) {
+                    $q->whereHas('market', fn ($qq) => $qq->where('name', 'like', "%{$filters['q']}%"))
+                        ->orWhere('nomor_setor', 'like', "%{$filters['q']}%")
+                        ->orWhereHas('recorder', fn ($qq) => $qq->where('name', 'like', "%{$filters['q']}%"));
+                });
+            }
+
+            $totals = array_fill_keys($colKeys, 0.0);
+            $grandTotal = 0.0;
+
+            $query->get()->each(function (Retribution $retribution) use (&$totals, &$grandTotal, $colKeys, $dashboardColumns) {
                 $itemAmounts = [];
 
                 if ($retribution->items->isNotEmpty()) {
@@ -365,11 +390,31 @@ $grandTotalQuery->with('items')
                     foreach ($sources as $source) {
                         $value += (float) ($itemAmounts[strtolower($source)] ?? 0);
                     }
-                    $grandTotals[$colKey] += $value;
+                    $totals[$colKey] += $value;
                 }
             });
 
-        $grandTotal = (float) $grandTotal;
+            return [
+                'totals' => $totals,
+                'grandTotal' => (float) $grandTotal,
+            ];
+        };
+
+        $manualGroup = $buildGroupTotals('manual');
+        $eretGroup = $buildGroupTotals('eret');
+
+        $manualGrandTotals = $manualGroup['totals'];
+        $manualGrandTotal = $manualGroup['grandTotal'];
+        $eretGrandTotals = $eretGroup['totals'];
+        $eretGrandTotal = $eretGroup['grandTotal'];
+
+        // Combined grand total — the only place both tables are added together,
+        // matching the official ERET worksheet's final total column.
+        $grandTotals = $manualGrandTotals;
+        foreach ($colKeys as $colKey) {
+            $grandTotals[$colKey] = $manualGrandTotals[$colKey] + $eretGrandTotals[$colKey];
+        }
+        $grandTotal = $manualGrandTotal + $eretGrandTotal;
 
         // --- REKAP: per-market summary with status breakdown ---
         $rekapQuery = Retribution::query()
@@ -423,8 +468,11 @@ $grandTotalQuery->with('items')
             ->sortBy('market')
             ->values();
 
-        // --- Market list for filter dropdown ---
+// --- Market list for filter dropdown ---
         $markets = Market::orderBy('name')->get();
+
+        // --- Petugas list for the spreadsheet input (role=petugas) ---
+        $petugas = User::where('role', 'petugas')->orderBy('name')->get();
 
         // --- Render View ---
         return view('dashboard', compact(
@@ -458,9 +506,16 @@ $grandTotalQuery->with('items')
             'colKeys',
 'eretTransactions',
             'grandTotal',
-            'grandTotals',
+'grandTotals',
+            'manualGrandTotal',
+            'manualGrandTotals',
+            'eretGrandTotal',
+            'eretGrandTotals',
             'rekapRows',
-            'markets'
+            'markets',
+            'petugas',
+            'manualSpreadsheetRows',
+            'eretSpreadsheetRows'
         ));
     }
 

@@ -4,10 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Market;
 use App\Models\Retribution;
+use App\Services\GeminiService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class OcrController extends Controller
 {
+    public function __construct(
+        protected GeminiService $geminiService
+    ) {}
+
     public function index()
     {
         return view('ocr.index');
@@ -15,43 +21,70 @@ class OcrController extends Controller
 
     public function process(Request $request)
     {
-
         $request->validate([
-
             'image' => [
                 'required',
                 'image',
                 'max:4096',
             ],
-
         ]);
 
-        $path = $request->file('image')
-            ->store('ocr-temp');
+        $file = $request->file('image');
+        $path = $file->store('ocr-temp');
 
-        /*
-        |--------------------------------------------------------------------------
-        | SIMULASI HASIL OCR
-        |--------------------------------------------------------------------------
-        | Nanti diganti Gemini / Tesseract
-        |--------------------------------------------------------------------------
-        */
+        try {
+            $base64 = base64_encode($file->get());
+            $mimeType = $file->getMimeType();
 
-        $ocrData = [
-            'nomor_setor' => 'ETK-000123',
-            'tanggal' => now()->format('Y-m-d'),
-            'pasar' => 'KARIMATA 1',
-            'jenis_retribusi' => 'Kios',
-            'nominal' => 5000,
-            'image' => $path,
-        ];
+            $response = $this->geminiService->ocr($base64, $mimeType);
 
-        session(['ocr_result' => $ocrData]);
+            $data = $this->extractOcrData($response);
 
-        return redirect()
-            ->route('ocr.index')
-            ->with('ocr_result', $ocrData);
+            $ocrData = [
+                'nomor_setor' => $data['nomor_setor'] ?? null,
+                'tanggal' => $data['tanggal'] ?? now()->format('Y-m-d'),
+                'pasar' => $data['pasar'] ?? null,
+                'jenis_retribusi' => $data['jenis_retribusi'] ?? null,
+                'nominal' => $data['total'] ?? $data['nominal'] ?? 0,
+                'image' => $path,
+            ];
 
+            session(['ocr_result' => $ocrData]);
+
+            return redirect()
+                ->route('ocr.index')
+                ->with('ocr_result', $ocrData);
+        } catch (\Exception $e) {
+            Log::error('OCR Processing failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->route('ocr.index')
+                ->with('error', 'Gagal memproses OCR. Silakan coba lagi.');
+        }
+    }
+
+    /**
+     * Extract OCR payload from Gemini response.
+     *
+     * @param  array<string, mixed>  $response
+     * @return array<string, mixed>
+     */
+    private function extractOcrData(array $response): array
+    {
+        $text = $response['candidates'][0]['content']['parts'][0]['text'] ?? '';
+
+        $json = trim($text);
+        // Strip markdown code fences if present
+        if (str_starts_with($json, '```')) {
+            $json = preg_replace('/^```(?:json)?\s*/', '', $json);
+            $json = preg_replace('/\s*```$/', '', $json);
+        }
+
+        $decoded = json_decode($json, true);
+
+        return is_array($decoded) ? $decoded : [];
     }
 
     public function review()

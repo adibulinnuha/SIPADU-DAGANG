@@ -12,6 +12,12 @@
         </p>
     </div>
 
+@if(session('error'))
+        <div class="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <!-- Upload -->
     <div class="rounded-2xl border bg-white p-6 shadow-sm">
         <h2 class="mb-4 text-lg font-bold text-slate-800">

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BendelController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EretDashboardController;
 use App\Http\Controllers\MarketController;
 use App\Http\Controllers\OcrController;
 use App\Http\Controllers\PetugasController;
@@ -32,8 +33,11 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::get('/dashboard', DashboardController::class)
+Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
+
+    Route::post('/dashboard/eret/save', [EretDashboardController::class, 'save'])
+        ->name('dashboard.eret.save');
 
     /*
     |--------------------------------------------------------------------------

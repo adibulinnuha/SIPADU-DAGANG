@@ -87,6 +87,32 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Entry Types (Tabel ERET)
+    |--------------------------------------------------------------------------
+    | Dua worksheet independent pada template ERET resmi:
+    |   - 'manual' => Tabel A (Retribusi Manual)
+    |   - 'eret'   => Tabel B (E-Retribusi)
+    |
+    | Setiap tabel memiliki baris, subtotal, dan perhitungan terpisah.
+    | Hanya grand total yang menggabungkan keduanya (sesuai template ERET).
+    */
+
+    'entry_types' => [
+
+        'manual' => [
+            'label' => 'Tabel A — Retribusi Manual',
+            'subtitle' => 'Pengumpulan setoran retribusi manual per pasar',
+        ],
+
+        'eret' => [
+            'label' => 'Tabel B — E-Retribusi',
+            'subtitle' => 'Setoran retribusi elektronik (E-Retribusi) per pasar',
+        ],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Format Angka
     |--------------------------------------------------------------------------
     */

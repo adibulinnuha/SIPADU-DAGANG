@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'payment_method',
     'notes',
     'nomor_setor',
+    'entry_type',
 
     // workflow approval
     'status',

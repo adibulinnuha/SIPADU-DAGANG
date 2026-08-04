@@ -55,8 +55,8 @@ class RetributionController extends Controller
         return Excel::download(
             new RetributionsExport(
                 $request->market_id,
-                $request->date_start,
-                $request->date_end
+                $request->get('start_date', $request->date_start),
+                $request->get('end_date', $request->date_end)
             ),
             'Retribusi_'.now()->format('Y-m-d_H-i').'.xlsx'
         );

@@ -1,19 +1,28 @@
-# Sprint: Dashboard ERET (Spreadsheet)
+# ERET Dual-Table Worksheet — Implementation Tasks
 
-## Progress Tracking
+## Objective
+Implement TWO independent ERET tables in the dashboard spreadsheet:
+- **Table A = Manual Retribusi** (`entry_type = 'manual'`)
+- **Table B = E-Retribusi** (`entry_type = 'eret'`)
 
-- [x] 1. Audit struktur project, controller dashboard, model Retribution, RetributionItem, route, blade dashboard
-- [x] 2. Konfirmasi rencana & keputusan implementasi
-- [x] 3. Tambahkan mapping kolom dashboard (config/eret.php)
-- [ ] 4. Perbarui `DashboardController` — filter, sorting, pagination, ERET Harian, REKAP, footer total
-- [ ] 5. Perbarui `resources/views/dashboard.blade.php` — filter bar + tabel ERET Harian + tabel REKAP (sticky header, sticky kolom pertama, horizontal scroll, keyboard friendly)
-- [ ] 6. Validasi: jalankan test suite (regression)
-- [ ] 7. Validasi: render dashboard (manual / artisan serve)
+Each table has independent editable rows, add/delete, subtotals, calculations,
+and save logic. Only the final grand total combines values where the official
+ERET worksheet requires it. Saving Manual must NEVER delete E-Retribusi rows and
+vice versa.
 
-## Keputusan Implementasi
+## Steps
 
-- Kolom **Sampah** bersumber dari `jenis_retribusi = 'kebersihan'` (sesuai template ERET) — dapat diubah via `config/eret.php > dashboard_columns`.
-- Layout: Ringkasan KPI → Filter → TABEL ERET HARIAN → TABEL REKAP → section lama tetap dipertahankan.
-- Pagination: 15 baris/halaman pada tabel ERET Harian.
-- Tabel REKAP menampilkan breakdown status workflow per pasar (Draft/Submitted/Verified/Approved/Locked).
-
+- [x] Create migration to add `entry_type` column to `retributions` (default 'manual', indexed)
+- [x] Update `Retribution` model `$fillable` with `entry_type`
+- [x] Update `EretDashboardService` to accept and persist `entry_type` per row
+- [x] Scope delete-by-draft logic by `entry_type` (Manual save never deletes E-Retribusi rows)
+- [x] Update `EretDashboardSaveRequest` to validate optional `entry_type`
+- [x] Update `EretDashboardController` to pass `entry_type` from request to service
+- [x] Update `DashboardController` to split manual vs eret rows and compute separate subtotals + combined grand total
+- [x] Update `eret-spreadsheet.js` to include `entry_type` in payload and support unique grid id
+- [x] Update `dashboard.blade.php` to render two independent spreadsheet tables
+- [x] Update `config/eret.php` with group labels
+- [x] Add `tests/Feature/EretTwoTableTest.php` covering manual save, eret save, separate subtotals, combined grand total, delete scope, batch save, validation
+- [x] Run `php artisan test` and fix any failures
+- [x] Remove debug code / dead code
+- [x] Ensure `git status` is clean and commit changes
