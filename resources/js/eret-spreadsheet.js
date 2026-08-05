@@ -52,7 +52,7 @@ const csrfToken = config.csrfToken;
         return Number.isFinite(n) ? n : NaN;
     };
 
-    const normalizeRow = (row) => {
+const normalizeRow = (row) => {
         const r = { ...row };
         colKeys.forEach((k) => {
             if (r[k] === undefined || r[k] === null) r[k] = '';
@@ -61,6 +61,63 @@ const csrfToken = config.csrfToken;
         r.total = 0;
         r._dirty = false;
         return r;
+    };
+
+    /**
+     * Extract human-readable error messages from a Laravel JSON error response.
+     *
+     * Laravel can return the `errors` field in several shapes depending on how
+     * the failure occurred:
+     *   - Array of { row, field, message } objects (business/dashboard validation)
+     *   - Array of plain strings
+     *   - Object keyed by field (FormRequest validation, HTTP 422):
+     *       { "rows.0.market_id": ["The rows.0.market_id field is required."] }
+     *
+     * We also fall back to `data.message` (a single string) when `errors` is
+     * absent, empty, or not structured, and to a generic message as a last resort.
+     * This prevents `(data.errors || []).map is not a function` when `errors` is
+     * an object rather than an array.
+     */
+    const extractErrorMessages = (data) => {
+        const messages = [];
+
+        const push = (value) => {
+            if (value === null || value === undefined) return;
+            if (typeof value === 'string') {
+                const text = value.trim();
+                if (text) messages.push(text);
+            } else if (Array.isArray(value)) {
+                value.forEach((item) => push(item));
+            } else if (typeof value === 'object') {
+                Object.values(value).forEach((item) => push(item));
+            }
+        };
+
+        if (data && data.errors !== undefined) {
+            if (Array.isArray(data.errors)) {
+                // Array of { message } objects OR array of plain strings.
+                data.errors.forEach((e) => {
+                    if (e !== null && typeof e === 'object' && typeof e.message === 'string') {
+                        const text = e.message.trim();
+                        if (text) messages.push(text);
+                    } else {
+                        push(e);
+                    }
+                });
+            } else {
+                // Object keyed by field (Laravel 422 validation bag).
+                push(data.errors);
+            }
+        }
+
+        // Fall back to the top-level message string when no structured errors
+        // were found (e.g. a 422 response only surfaces `message`).
+        if (messages.length === 0 && data && typeof data.message === 'string') {
+            const text = data.message.trim();
+            if (text) messages.push(text);
+        }
+
+        return messages;
     };
 
     // Backing store (non-reactive except where Alpine needs it).
@@ -1447,8 +1504,8 @@ this.saving = true;
                     },
                     body: JSON.stringify(payload),
                 });
-                const data = await res.json();
-                if (data.success) {
+const data = await res.json();
+                if (res.ok && data.success) {
                     this.saveMessage = 'Data berhasil disimpan. (baru: ' + data.created +
                         ', diperbarui: ' + data.updated +
                         ', dihapus: ' + data.deleted + ')';
@@ -1461,8 +1518,15 @@ this.saving = true;
                     this.syncState();
                     setTimeout(() => window.location.reload(), 600);
                 } else {
-                    this.saveMessage = 'Sebagian baris gagal disimpan: ' +
-                        (data.errors || []).map((e) => e.message).join('; ');
+                    // Handle all possible Laravel error payload shapes:
+                    //   - Array of { message } objects (business validation)
+                    //   - Array of plain strings
+                    //   - Object keyed by field (FormRequest 422 validation)
+                    //   - data.message string fallback
+                    const messages = extractErrorMessages(data);
+                    this.saveMessage = messages.length > 0
+                        ? 'Gagal menyimpan: ' + messages.join('; ')
+                        : 'Gagal menyimpan data. Silakan coba lagi.';
                     this.saveSuccess = false;
                     this.saveState = 'Gagal disimpan';
                     this.draftState = 'draft';
