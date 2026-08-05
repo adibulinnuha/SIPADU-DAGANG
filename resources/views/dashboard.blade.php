@@ -344,6 +344,13 @@
     {{-- 4. KERJA HARIAN — SPREADSHEET ERET (TABEL A + TABEL B) --}}
     {{-- ================================================================ --}}
 
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-xl font-bold text-slate-800 dark:text-white">ERET — Pekerjaan Harian</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Input retribusi harian per pasar (spreadsheet)</p>
+        </div>
+    </div>
+
     {{-- PRS (Partial Reusable Sheet) — rendered twice below, once per table. --}}
     @php
         $sheetConfigs = [
@@ -578,9 +585,9 @@
     {{-- ================================================================ --}}
     <div class="overflow-hidden rounded-2xl border-2 border-slate-300 bg-slate-50 shadow-sm dark:border-slate-600 dark:bg-slate-800">
         <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
-            <div>
-                <h3 class="text-lg font-bold text-slate-800 dark:text-white">Grand Total Seluruh Pasar</h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Gabungan Tabel A (Manual) + Tabel B (E-Retribusi) — sesuai template ERET</p>
+<div>
+                <h3 class="text-lg font-bold text-slate-800 dark:text-white">TOTAL SELURUH PASAR</h3>
+                <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Grand Total Seluruh Pasar — Gabungan Tabel A (Manual) + Tabel B (E-Retribusi) — sesuai template ERET</p>
             </div>
         </div>
         <div class="overflow-x-auto p-1">
