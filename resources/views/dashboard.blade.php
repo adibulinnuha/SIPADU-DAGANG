@@ -375,17 +375,17 @@
 
     @foreach($sheetConfigs as $sheet)
     <div
-        x-data="createEretSpreadsheet({
-            gridId: 'eret-grid-{{ $sheet['id'] }}',
+        x-data='createEretSpreadsheet({
+            gridId: "eret-grid-{{ $sheet['id'] }}",
             colKeys: @json($colKeys),
             markets: @json($markets->map(fn($m) => ['id' => $m->id, 'name' => $m->name])->values()),
             petugas: @json($petugas->map(fn($p) => ['id' => $p->id, 'name' => $p->name])->values()),
             tanggal: @json($filters['tanggal']),
-            csrfToken: document.querySelector('meta[name=\"csrf-token\"]')?.content,
+            csrfToken: @json(csrf_token()),
             apiUrl: @json(route('dashboard.eret.save')),
             entryType: @json($sheet['id']),
             initialRows: @json($sheet['rows'])
-        })"
+        })'
         class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800"
         x-init="init()">
 
@@ -457,7 +457,7 @@
                     Hapus Terpilih
                 </button>
 
-                <button type="button" @click="addRow()"
+                <button type="button" @click="addBlankRow()"
                         class="inline-flex items-center gap-1.5 rounded-lg {{ $sheet['accent'] === 'emerald' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700' }} px-4 py-2 text-sm font-semibold text-white shadow transition active:scale-95">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
                     Tambah Baris
@@ -600,7 +600,7 @@
                         @foreach($colKeys as $colKey)
                         <td class="eret-cell eret-num" x-text="fmtCell(colTotal('{{ $colKey }}'))"></td>
                         @endforeach
-                        <td class="eret-cell eret-num eret-total font-bold" x-text="fmtCell(grandTotal())"></td>
+                        <td class="eret-cell eret-num eret-total font-bold" x-text="fmtCell(grandTotal)"></td>
                         <td></td>
                     </tr>
                 </tfoot>
@@ -613,7 +613,7 @@
                     💡 Enter = simpan & pindah ke bawah · Escape = batal · Tab = ke kanan · Shift+Tab = ke kiri · Arrow = navigasi · Ctrl+Enter = isi sel terpilih · Copy/Paste dari Excel didukung
                 </p>
                 <span class="text-sm font-bold text-slate-700 dark:text-slate-200">
-                    Grand Total: <span class="text-emerald-600 dark:text-emerald-400" x-text="fmtCell(grandTotal())"></span>
+                    Grand Total: <span class="text-emerald-600 dark:text-emerald-400" x-text="fmtCell(grandTotal)"></span>
                 </span>
             </div>
         </div>

@@ -578,7 +578,7 @@ const clearDirty = () => {
         selectedRows = rowsFromRange(selectionRange);
     };
 
-    const scrollToActiveCell = () => {
+const scrollToActiveCell = () => {
         if (!scrollEl || activeRow < 0) return;
         const rowTop = activeRow * rowHeight;
         const rowBottom = rowTop + rowHeight;
@@ -589,6 +589,16 @@ const clearDirty = () => {
             scrollEl.scrollTop = rowBottom - scrollEl.clientHeight;
             updateVirtualRange();
         }
+    };
+
+    // Scroll the grid container to the bottom so a newly appended row moves
+    // into the visible virtual window (and renders for editing). Without this,
+    // the row is added to the backing store but stays outside gridRows when
+    // the grid overflows the viewport and the user is scrolled above the bottom.
+    const scrollToBottom = () => {
+        if (!scrollEl) return;
+        scrollEl.scrollTop = scrollEl.scrollHeight;
+        updateVirtualRange();
     };
 
     const clearSelectedCells = () => {
@@ -773,11 +783,19 @@ const clearDirty = () => {
         markets,
         petugas,
         tanggal,
-        saveState: 'Belum disimpan',
+saveState: 'Belum disimpan',
         saveMessage: '',
         saveSuccess: true,
         saving: false,
         dirtyCount: 0,
+        // Reactive render trigger. The backing store (rows, virtualStart,
+        // virtualEnd, colTotals, grandTotal, activeRow) lives in plain,
+        // non-reactive closure variables. Alpine's x-for therefore has no
+        // reactive dependency to re-render when rows change. This counter is
+        // bumped in syncState() (called after every mutation) and read by the
+        // getters/methods that reflect the backing store, so the grid,
+        // row-count badge and totals always re-render after any change.
+        gridVersion: 0,
         dragging: false,
         dragOverRow: -1,
         draftState: 'clean',   // clean | draft | saving | saved
@@ -829,14 +847,20 @@ const clearDirty = () => {
             });
         },
 
-        // Reactive mirrors for Alpine bindings.
+// Reactive mirrors for Alpine bindings. Called after every backing-store
+        // mutation. Bumping gridVersion gives Alpine a reactive signal so the
+        // grid, spacers, row-count badge and totals re-render.
         syncState() {
             this.dirtyCount = dirtySet.size;
             this.colTotals = { ...colTotals };
             this.grandTotal = grandTotal;
+            this.gridVersion += 1;
         },
 
         get gridRows() {
+            // Read gridVersion so Alpine tracks this getter as reactive and
+            // re-runs the x-for when rows change (add/delete/duplicate/move).
+            void this.gridVersion;
             const visible = [];
             if (virtualEnd === 0 || virtualEnd <= virtualStart) {
                 updateVirtualRange();
@@ -848,14 +872,18 @@ const clearDirty = () => {
         },
 
         get topSpacerHeight() {
+            void this.gridVersion;
             return virtualStart * rowHeight;
         },
 
         get bottomSpacerHeight() {
+            void this.gridVersion;
             return Math.max(0, (rows.length - virtualEnd) * rowHeight);
         },
 
         get rowCount() {
+            // Read gridVersion so the "N baris" badge updates after changes.
+            void this.gridVersion;
             return rows.length;
         },
 
@@ -868,10 +896,28 @@ const clearDirty = () => {
             this.syncState();
         },
 
+addBlankRow() {
+            // Call inner addRow implementation and update reactive state.
+            addRow();
+            this.syncState();
+            this.markChanged();
+            // Ensure the newly appended row enters the visible virtual window
+            // so it renders and is editable, even when the grid overflows the
+            // viewport and the user is currently scrolled above the bottom.
+            this.$nextTick(() => {
+                scrollToBottom();
+            });
+        },
+
         addRow() {
             addRow();
             this.syncState();
             this.markChanged();
+            // Same scroll-to-bottom guard as addBlankRow (used by toolbar/other
+            // callers that append a row at the end).
+            this.$nextTick(() => {
+                scrollToBottom();
+            });
         },
 
         insertRowAt(index) {
@@ -1013,12 +1059,23 @@ commitEdit(index, col, event) {
             this.syncState();
         },
 
-        onCellInput(index, col, event) {
+onCellInput(index, col, event) {
             rows[index][col] = event.target.value;
             markDirty(index);
             recalcCell(index, col);
-            this.syncState();
-            this.markChanged();
+            // Light reactive update: refresh the footer totals + dirty/draft
+            // state WITHOUT bumping gridVersion. Bumping gridVersion on every
+            // keystroke re-renders the grid x-for, which recreates the focused
+            // input element and loses partially-typed values when the virtual
+            // window shifts (the grid is virtualized). The value is already
+            // stored in the backing row, so it persists on commit/next render.
+            this.colTotals = { ...colTotals };
+            this.grandTotal = grandTotal;
+            this.dirtyCount = dirtySet.size;
+            this.saveState = 'Perubahan belum disimpan';
+            this.draftState = 'draft';
+            this.hasDraft = true;
+            saveDraft();
         },
 
         onCellMouseDown(index, col, event) {
@@ -1337,8 +1394,10 @@ fillSelection(index, col) {
             return row ? row.total : 0;
         },
 
-        colTotal(col) {
-            return colTotals[col] || 0;
+colTotal(col) {
+            // Read the reactive mirror (set in syncState) so the footer
+            // per-column totals re-render after row changes / edits.
+            return (this.colTotals && this.colTotals[col]) || 0;
         },
 
         grandTotal() {
