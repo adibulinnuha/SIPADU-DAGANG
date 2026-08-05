@@ -54,7 +54,10 @@ const csrfToken = config.csrfToken;
 
     const normalizeRow = (row) => {
         const r = { ...row };
-        colKeys.forEach((k) => { if (r[k] === undefined || r[k] === null) r[k] = ''; });
+        colKeys.forEach((k) => {
+            if (r[k] === undefined || r[k] === null) r[k] = '';
+            r['_prev_' + k] = toNumber(r[k]);
+        });
         r.total = 0;
         r._dirty = false;
         return r;
@@ -70,10 +73,22 @@ const csrfToken = config.csrfToken;
     let selectedRows = new Set();   // row indices (Set of numbers)
     let activeRow = -1;
     let activeCol = -1;
+    let selectionAnchor = null;
+    let selectionRange = null;
     let editing = null;             // { row, col }
     let clipboard = null;           // { cols:[], data: 2D array }
     let dragIdx = -1;
     let dropIdx = -1;
+    let isSelecting = false;
+    let isFillDragging = false;
+    let fillRange = null;
+    let scrollEl = null;
+    let virtualStart = 0;
+    let virtualEnd = 0;
+    let undoStack = [];
+    let redoStack = [];
+    const rowHeight = 52;
+    const overscan = 8;
 
     // ── totals ─────────────────────────────────────────────────
     const recomputeAll = () => {
@@ -118,6 +133,87 @@ const csrfToken = config.csrfToken;
         let rt = 0;
         colKeys.forEach((k) => { rt += toNumber(row[k]); });
         row.total = rt;
+    };
+
+    const normalizeRange = (a, b) => {
+        const row1 = Math.min(a.row, b.row);
+        const row2 = Math.max(a.row, b.row);
+        const col1 = Math.min(a.col, b.col);
+        const col2 = Math.max(a.col, b.col);
+        return { row1, row2, col1, col2 };
+    };
+
+    const rowsFromRange = (range) => {
+        const set = new Set();
+        if (!range) return set;
+        for (let i = range.row1; i <= range.row2; i += 1) {
+            set.add(i);
+        }
+        return set;
+    };
+
+    const isCellInRange = (row, col) => {
+        if (!selectionRange) return false;
+        return row >= selectionRange.row1 && row <= selectionRange.row2
+            && col >= selectionRange.col1 && col <= selectionRange.col2;
+    };
+
+    const pushHistory = () => {
+        undoStack.push({
+            rows: serializeRows(),
+            activeRow,
+            activeCol,
+            selectionRange: selectionRange ? { ...selectionRange } : null,
+        });
+        if (undoStack.length > 50) undoStack.shift();
+        redoStack = [];
+    };
+
+    const restoreHistory = (snapshot) => {
+        if (!snapshot) return;
+        rows = snapshot.rows.map((r) => normalizeRow(r));
+        rows.forEach((row) => {
+            colKeys.forEach((k) => { row['_prev_' + k] = toNumber(row[k]); });
+        });
+        recomputeAll();
+        activeRow = snapshot.activeRow ?? -1;
+        activeCol = snapshot.activeCol ?? -1;
+        selectionRange = snapshot.selectionRange ? { ...snapshot.selectionRange } : null;
+        selectedRows = selectionRange ? rowsFromRange(selectionRange) : new Set();
+    };
+
+    const undo = () => {
+        if (undoStack.length === 0) return;
+        const snapshot = undoStack.pop();
+        redoStack.push({
+            rows: serializeRows(),
+            activeRow,
+            activeCol,
+            selectionRange: selectionRange ? { ...selectionRange } : null,
+        });
+        restoreHistory(snapshot);
+    };
+
+    const redo = () => {
+        if (redoStack.length === 0) return;
+        const snapshot = redoStack.pop();
+        undoStack.push({
+            rows: serializeRows(),
+            activeRow,
+            activeCol,
+            selectionRange: selectionRange ? { ...selectionRange } : null,
+        });
+        restoreHistory(snapshot);
+    };
+
+    const updateVirtualRange = () => {
+        if (!scrollEl) return;
+        const scrollTop = scrollEl.scrollTop;
+        const height = scrollEl.clientHeight;
+        const start = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
+        const end = Math.min(rows.length, Math.ceil((scrollTop + height) / rowHeight) + overscan);
+        virtualStart = start;
+        virtualEnd = Math.max(start, end);
     };
 
     // ── formatting ─────────────────────────────────────────────
@@ -235,7 +331,8 @@ const clearDirty = () => {
     };
 
     // ── row management ─────────────────────────────────────────
-    const addRow = (index) => {
+    const addRow = (index, recordHistory = true) => {
+        if (recordHistory) pushHistory();
         const row = { id: null, market_id: '', petugas_id: '', nomor_setor: '' };
         colKeys.forEach((k) => { row[k] = ''; row['_prev_' + k] = 0; });
         row.total = 0;
@@ -247,12 +344,15 @@ const clearDirty = () => {
         }
         dirtySet.add(row);
         recomputeAll();
+        updateVirtualRange();
         return rows.length - 1;
     };
 
     const insertRowAt = (index) => addRow(index);
 
     const deleteRows = (indices) => {
+        if (indices.length === 0) return;
+        pushHistory();
         const target = [...new Set(indices)].sort((a, b) => b - a);
         target.forEach((i) => {
             if (i >= 0 && i < rows.length) {
@@ -262,11 +362,15 @@ const clearDirty = () => {
             }
         });
         selectedRows.clear();
+        selectionRange = null;
+        selectionAnchor = null;
         recomputeAll();
+        updateVirtualRange();
     };
 
     const duplicateRow = (index) => {
         if (index < 0 || index >= rows.length) return;
+        pushHistory();
         const src = rows[index];
         const copy = normalizeRow({});
         copy.id = null;
@@ -279,45 +383,97 @@ const clearDirty = () => {
         dirtySet.add(copy);
         selectedRows.clear();
         recomputeAll();
+        updateVirtualRange();
     };
 
     const moveRow = (from, to) => {
         if (from === to) return;
+        pushHistory();
         const [item] = rows.splice(from, 1);
         rows.splice(to, 0, item);
         selectedRows.clear();
         recomputeAll();
+        updateVirtualRange();
     };
 
     const toggleSelect = (index, additive) => {
         if (!additive) {
             selectedRows = new Set([index]);
+            selectionRange = { row1: index, row2: index, col1: 0, col2: colKeys.length };
+            selectionAnchor = { row: index, col: 0 };
         } else if (selectedRows.has(index)) {
             selectedRows.delete(index);
+            selectionRange = null;
+            selectionAnchor = null;
         } else {
             selectedRows.add(index);
+            selectionRange = null;
+            selectionAnchor = null;
         }
+    };
+
+    const selectCell = (row, col, extend = false) => {
+        if (row < 0 || row >= rows.length || col < 0 || col > colKeys.length) return;
+        activeRow = row;
+        activeCol = col;
+        if (extend && selectionAnchor) {
+            selectionRange = normalizeRange(selectionAnchor, { row, col });
+        } else {
+            selectionAnchor = { row, col };
+            selectionRange = { row1: row, row2: row, col1: col, col2: col };
+        }
+        selectedRows = rowsFromRange(selectionRange);
     };
 
     const selectRange = (from, to) => {
         selectedRows = new Set();
         const lo = Math.min(from, to);
         const hi = Math.max(from, to);
-        for (let i = lo; i <= hi; i++) selectedRows.add(i);
+        for (let i = lo; i <= hi; i += 1) selectedRows.add(i);
+    };
+
+    const clearSelectedCells = () => {
+        if (!selectionRange && selectedRows.size === 0) return;
+        pushHistory();
+        const rowsToClear = selectionRange ?
+            Array.from({ length: selectionRange.row2 - selectionRange.row1 + 1 }, (_, idx) => selectionRange.row1 + idx) :
+            [...selectedRows];
+        rowsToClear.forEach((r) => {
+            const row = rows[r];
+            if (!row) return;
+            row.nomor_setor = '';
+            colKeys.forEach((k) => { row[k] = ''; });
+            markDirty(r);
+            recalcRowTotals(r);
+        });
+        selectedRows.clear();
+        selectionRange = null;
+        selectionAnchor = null;
+        recomputeAll();
+        updateVirtualRange();
     };
 
     // ── clipboard ──────────────────────────────────────────────
     const buildClipboardText = () => {
-        const indices = [...selectedRows].sort((a, b) => a - b);
-        if (indices.length === 0) return '';
         const cols = ['nomor_setor', ...colKeys];
         const lines = [];
+        if (selectionRange) {
+            for (let r = selectionRange.row1; r <= selectionRange.row2; r += 1) {
+                const row = rows[r];
+                const cells = [];
+                for (let c = selectionRange.col1; c <= selectionRange.col2; c += 1) {
+                    const key = cellIndexToKey(c);
+                    cells.push(row[key] === '' || row[key] === null ? '' : String(row[key]));
+                }
+                lines.push(cells.join('\t'));
+            }
+            return lines.join('\n');
+        }
+        const indices = [...selectedRows].sort((a, b) => a - b);
+        if (indices.length === 0) return '';
         indices.forEach((i) => {
             const row = rows[i];
-            const cells = cols.map((c) => {
-                if (c === 'nomor_setor') return row.nomor_setor || '';
-                return row[c] === '' || row[c] === null ? '' : String(row[c]);
-            });
+            const cells = cols.map((c) => (row[c] === '' || row[c] === null ? '' : String(row[c])));
             lines.push(cells.join('\t'));
         });
         return lines.join('\n');
@@ -327,7 +483,6 @@ const clearDirty = () => {
         const text = buildClipboardText();
         if (!text) return;
         const cols = ['nomor_setor', ...colKeys];
-        // Store structured clipboard for internal paste.
         clipboard = {
             cols,
             data: text.split('\n').map((line) => line.split('\t')),
@@ -371,7 +526,6 @@ const clearDirty = () => {
     const applyPaste = (cols, data) => {
         const startRow = activeRow >= 0 ? activeRow : 0;
         const startCol = activeCol >= 0 ? activeCol : 0;
-        const colIndex = cols.map((c) => colKeys.indexOf(c));
         data.forEach((rowVals, r) => {
             const targetRow = startRow + r;
             if (targetRow >= rows.length) {
@@ -379,14 +533,16 @@ const clearDirty = () => {
             }
             rowVals.forEach((val, c) => {
                 const targetCol = startCol + c;
-                if (targetCol >= colKeys.length) return;
-                const key = colKeys[targetCol];
+                if (targetCol > colKeys.length) return;
+                const key = targetCol === 0 ? 'nomor_setor' : cellIndexToKey(targetCol);
+                if (!key) return;
                 const parsed = parseNumeric(val);
                 rows[targetRow][key] = isNaN(parsed) ? val : parsed;
                 markDirty(targetRow);
-                recalcCell(targetRow, key);
+                if (key !== 'nomor_setor') recalcCell(targetRow, key);
             });
         });
+        recomputeAll();
     };
 
     // ── navigation ─────────────────────────────────────────────
@@ -402,7 +558,7 @@ const clearDirty = () => {
 
     const focusCell = (row, col) => {
         activeRow = row;
-        activeCol = col;
+        activeCol = typeof col === 'number' ? col : colKeyIndex(col);
         selectedRows = new Set([row]);
         const el = thisCellEl(row, col);
         if (el) {
@@ -416,7 +572,7 @@ const clearDirty = () => {
     const thisCellEl = (row, col) => {
         const root = document.getElementById(gridId);
         if (!root) return null;
-        const key = cellIndexToKey(col);
+        const key = typeof col === 'number' ? cellIndexToKey(col) : col;
         const input = root.querySelector(
             `[data-row="${row}"][data-col="${key}"] input`
         );
@@ -447,7 +603,7 @@ const clearDirty = () => {
         markets,
         petugas,
         tanggal,
-saveState: 'Belum disimpan',
+        saveState: 'Belum disimpan',
         saveMessage: '',
         saveSuccess: true,
         saving: false,
@@ -458,7 +614,6 @@ saveState: 'Belum disimpan',
         hasDraft: false,
 
         init() {
-            // Restore a previously saved draft (if any) before rendering.
             const restored = restoreDraft();
             if (rows.length === 0) {
                 addRow(0);
@@ -471,6 +626,14 @@ saveState: 'Belum disimpan',
                 this.hasDraft = true;
                 this.saveState = 'Draft tersimpan';
             }
+            this.$nextTick(() => {
+                scrollEl = this.$refs.scroll;
+                if (scrollEl) {
+                    scrollEl.addEventListener('scroll', updateVirtualRange);
+                    updateVirtualRange();
+                }
+                window.addEventListener('keydown', (event) => this.onGlobalKeydown(event));
+            });
             window.addEventListener('beforeunload', (e) => {
                 if (dirtySet.size > 0) {
                     e.preventDefault();
@@ -486,6 +649,29 @@ saveState: 'Belum disimpan',
             this.grandTotal = grandTotal;
         },
 
+        get gridRows() {
+            const visible = [];
+            if (virtualEnd === 0 || virtualEnd <= virtualStart) {
+                updateVirtualRange();
+            }
+            for (let i = virtualStart; i < Math.min(rows.length, virtualEnd); i += 1) {
+                visible.push({ row: rows[i], rowIndex: i });
+            }
+            return visible;
+        },
+
+        get topSpacerHeight() {
+            return virtualStart * rowHeight;
+        },
+
+        get bottomSpacerHeight() {
+            return Math.max(0, (rows.length - virtualEnd) * rowHeight);
+        },
+
+        get rowCount() {
+            return rows.length;
+        },
+
         // Mark component as dirty and persist a draft to localStorage.
         markChanged() {
             this.saveState = 'Perubahan belum disimpan';
@@ -495,11 +681,7 @@ saveState: 'Belum disimpan',
             this.syncState();
         },
 
-        get gridRows() {
-            return rows;
-        },
-
-addRow() {
+        addRow() {
             addRow();
             this.syncState();
             this.markChanged();
@@ -519,7 +701,11 @@ addRow() {
         },
 
         removeSelected() {
-            deleteRows([...selectedRows]);
+            if (selectionRange) {
+                clearSelectedCells();
+            } else {
+                deleteRows([...selectedRows]);
+            }
             this.syncState();
             this.markChanged();
         },
@@ -545,11 +731,13 @@ addRow() {
 
         selectAll() {
             selectedRows = new Set(rows.map((_, i) => i));
+            selectionRange = { row1: 0, row2: rows.length - 1, col1: 0, col2: colKeys.length };
             this.syncState();
         },
 
         clearSelection() {
             selectedRows.clear();
+            selectionRange = null;
             this.syncState();
         },
 
@@ -601,13 +789,16 @@ onDrop(index) {
 
         // Cell editing
         startEdit(index, col) {
-            editing = { row: index, col };
+            const resolvedCol = typeof col === 'number' ? cellIndexToKey(col) : col;
+            editing = { row: index, col: resolvedCol };
             activeRow = index;
-            activeCol = col;
+            activeCol = typeof col === 'number' ? col : colKeyIndex(resolvedCol);
             selectedRows = new Set([index]);
+            selectionRange = { row1: index, row2: index, col1: activeCol, col2: activeCol };
+            selectionAnchor = { row: index, col: activeCol };
             this.syncState();
             this.$nextTick(() => {
-                const el = thisCellEl(index, col);
+                const el = thisCellEl(index, resolvedCol);
                 if (el) el.focus();
             });
         },
@@ -641,10 +832,10 @@ commitEdit(index, col, event) {
 
         onCellKeydown(index, col, event) {
             const colIdx = colKeyIndex(col);
+            const ctrl = event.ctrlKey || event.metaKey;
             switch (event.key) {
                 case 'Enter':
-                    if (event.ctrlKey) {
-                        // Ctrl+Enter: fill selected cells with current value.
+                    if (ctrl) {
                         event.preventDefault();
                         this.fillSelection(index, col);
                         return;
@@ -692,6 +883,29 @@ commitEdit(index, col, event) {
                     this.commitEdit(index, col, event);
                     if (colIdx > 0) this.startEdit(index, colIdx - 1);
                     break;
+                case 'Home':
+                    if (ctrl) {
+                        event.preventDefault();
+                        this.startEdit(0, 0);
+                    } else {
+                        event.preventDefault();
+                        this.startEdit(index, 0);
+                    }
+                    break;
+                case 'End':
+                    event.preventDefault();
+                    if (ctrl) {
+                        this.startEdit(rows.length - 1, colKeys.length);
+                    } else {
+                        this.startEdit(index, colKeys.length);
+                    }
+                    break;
+                case 'Delete':
+                    if (!ctrl) {
+                        event.preventDefault();
+                        clearSelectedCells();
+                    }
+                    break;
                 default:
                     break;
             }
@@ -703,13 +917,29 @@ commitEdit(index, col, event) {
         },
 
 fillSelection(index, col) {
-            const value = rows[index][col];
-            selectedRows.forEach((i) => {
-                if (i === index) return;
-                rows[i][col] = value;
-                markDirty(i);
-                recalcCell(i, col);
-            });
+            if (!selectionRange) {
+                return;
+            }
+            pushHistory();
+            const colIdx = colKeyIndex(col);
+            const sourceValue = rows[index][col];
+            const sourceNumber = parseNumeric(sourceValue);
+            const sameCol = selectionRange.col1 === selectionRange.col2;
+            for (let r = selectionRange.row1; r <= selectionRange.row2; r += 1) {
+                for (let c = selectionRange.col1; c <= selectionRange.col2; c += 1) {
+                    const key = cellIndexToKey(c);
+                    if (!key) continue;
+                    if (r === index && c === colIdx) continue;
+                    if (sameCol && !Number.isNaN(sourceNumber) && key !== 'nomor_setor') {
+                        rows[r][key] = sourceNumber + (r - index);
+                    } else {
+                        rows[r][key] = sourceValue;
+                    }
+                    markDirty(r);
+                    if (key !== 'nomor_setor') recalcCell(r, key);
+                }
+            }
+            recomputeAll();
             this.syncState();
             this.markChanged();
         },
@@ -741,6 +971,32 @@ fillSelection(index, col) {
                 pasteClipboard(text);
                 this.syncState();
                 this.markChanged();
+            }
+        },
+
+        onGlobalKeydown(event) {
+            const ctrl = event.ctrlKey || event.metaKey;
+            if (ctrl && event.key.toLowerCase() === 'z') {
+                event.preventDefault();
+                undo();
+                this.syncState();
+            } else if (ctrl && event.key.toLowerCase() === 'y') {
+                event.preventDefault();
+                redo();
+                this.syncState();
+            } else if (ctrl && event.key.toLowerCase() === 'c') {
+                event.preventDefault();
+                copySelection();
+            } else if (ctrl && event.key.toLowerCase() === 'x') {
+                event.preventDefault();
+                this.onCut();
+            } else if (ctrl && event.key.toLowerCase() === 'v') {
+                if (clipboard) {
+                    event.preventDefault();
+                    this.pasteClipboard();
+                }
+            } else if (event.key === 'Delete') {
+                clearSelectedCells();
             }
         },
 

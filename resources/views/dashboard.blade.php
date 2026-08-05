@@ -401,7 +401,7 @@
             <div class="flex flex-wrap items-center gap-3">
 {{-- Status input indicator --}}
                 <span class="rounded-full {{ $sheet['accent'] === 'emerald' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' }} px-3 py-1 text-xs font-medium">
-                    <span x-text="gridRows.length"></span> baris di spreadsheet
+                    <span x-text="rowCount"></span> baris di spreadsheet
                 </span>
 
                 {{-- Draft indicator (localStorage autosave) --}}
@@ -495,6 +495,9 @@
                     </tr>
                 </thead>
                 <tbody>
+                    <tr style="height: 0;" :style="{ height: topSpacerHeight + 'px' }">
+                        <td colspan="{{ count($colKeys) + 6 }}"></td>
+                    </tr>
                     <template x-for="(row, rowIndex) in gridRows" :key="row.id ?? rowIndex">
                         <tr
                             :class="{
@@ -538,8 +541,8 @@
                                     </template>
                                 </select>
                             </td>
-                            <td data-row="rowIndex" data-col="nomor_setor">
-<input type="text" :value="row.nomor_setor"
+                            <td :data-row="rowIndex" data-col="nomor_setor">
+                                <input type="text" :value="row.nomor_setor"
                                        @input="onCellInput(rowIndex, 'nomor_setor', $event)"
                                        @keydown="onCellKeydown(rowIndex, 'nomor_setor', $event)"
                                        @dblclick="startEdit(rowIndex, 'nomor_setor')"
@@ -549,8 +552,8 @@
                                 <div class="row-error" :class="{'visible': cellError(rowIndex, 'nomor_setor')}" x-text="cellError(rowIndex, 'nomor_setor')"></div>
                             </td>
                             @foreach($colKeys as $colKey)
-                            <td data-row="rowIndex" data-col="{{ $colKey }}">
-<input type="text" inputmode="decimal" :value="row.{{ $colKey }}"
+                            <td :data-row="rowIndex" data-col="{{ $colKey }}">
+                                <input type="text" inputmode="decimal" :value="row.{{ $colKey }}"
                                        @input="onCellInput(rowIndex, '{{ $colKey }}', $event)"
                                        @keydown="onCellKeydown(rowIndex, '{{ $colKey }}', $event)"
                                        @dblclick="startEdit(rowIndex, '{{ $colKey }}')"
@@ -572,6 +575,9 @@
                             </td>
                         </tr>
                     </template>
+                    <tr style="height: 0;" :style="{ height: bottomSpacerHeight + 'px' }">
+                        <td colspan="{{ count($colKeys) + 6 }}"></td>
+                    </tr>
                 </tbody>
                 <tfoot>
                     <tr class="eret-footer">
