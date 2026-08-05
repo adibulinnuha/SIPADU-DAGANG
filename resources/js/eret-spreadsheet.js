@@ -20,10 +20,13 @@ export function createEretSpreadsheet(config) {
     const markets = config.markets || [];
     const petugas = config.petugas || [];
     const tanggal = config.tanggal;
-    const csrfToken = config.csrfToken;
+const csrfToken = config.csrfToken;
     const apiUrl = config.apiUrl;
     const entryType = config.entryType || 'manual';
     const gridId = config.gridId || 'eret-grid';
+
+    // localStorage draft key — unsaved rows survive a browser refresh.
+    const draftKey = `eret-draft-${gridId}-${tanggal}-${entryType}`;
 
     // ── helpers ────────────────────────────────────────────────
     const toNumber = (v) => {
@@ -172,9 +175,63 @@ export function createEretSpreadsheet(config) {
         }
     };
 
-    const clearDirty = () => {
+const clearDirty = () => {
         dirtySet.clear();
         rows.forEach((r) => { r._dirty = false; });
+    };
+
+    // ── draft persistence (localStorage) ───────────────────────
+    // Serialize only the user-facing fields; strip internal state.
+    const serializeRows = () => rows.map((r) => {
+        const out = {
+            id: r.id,
+            market_id: r.market_id,
+            petugas_id: r.petugas_id,
+            nomor_setor: r.nomor_setor || '',
+        };
+        colKeys.forEach((k) => { out[k] = r[k]; });
+        return out;
+    });
+
+    const saveDraft = () => {
+        try {
+            localStorage.setItem(draftKey, JSON.stringify(serializeRows()));
+        } catch (e) {
+            // Ignore quota/Safari-private-mode errors; drafts are best-effort.
+        }
+    };
+
+    const loadDraft = () => {
+        try {
+            const raw = localStorage.getItem(draftKey);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : null;
+        } catch (e) {
+            return null;
+        }
+    };
+
+    const clearDraft = () => {
+        try {
+            localStorage.removeItem(draftKey);
+        } catch (e) {
+            // ignore
+        }
+    };
+
+    // Restore a saved draft (if any) over the server-initialized rows.
+    const restoreDraft = () => {
+        const draft = loadDraft();
+        if (!draft) return false;
+        rows = draft.map((r) => {
+            const row = normalizeRow(r);
+            colKeys.forEach((k) => { row['_prev_' + k] = toNumber(r[k]); });
+            row._dirty = true;
+            dirtySet.add(row);
+            return row;
+        });
+        return true;
     };
 
     // ── row management ─────────────────────────────────────────
@@ -390,21 +447,30 @@ export function createEretSpreadsheet(config) {
         markets,
         petugas,
         tanggal,
-        saveState: 'Belum disimpan',
+saveState: 'Belum disimpan',
         saveMessage: '',
         saveSuccess: true,
         saving: false,
         dirtyCount: 0,
         dragging: false,
         dragOverRow: -1,
+        draftState: 'clean',   // clean | draft | saving | saved
+        hasDraft: false,
 
         init() {
+            // Restore a previously saved draft (if any) before rendering.
+            const restored = restoreDraft();
             if (rows.length === 0) {
                 addRow(0);
                 this.saveState = 'Belum ada data';
             }
             recomputeAll();
             this.syncState();
+            if (restored) {
+                this.draftState = 'draft';
+                this.hasDraft = true;
+                this.saveState = 'Draft tersimpan';
+            }
             window.addEventListener('beforeunload', (e) => {
                 if (dirtySet.size > 0) {
                     e.preventDefault();
@@ -420,39 +486,48 @@ export function createEretSpreadsheet(config) {
             this.grandTotal = grandTotal;
         },
 
+        // Mark component as dirty and persist a draft to localStorage.
+        markChanged() {
+            this.saveState = 'Perubahan belum disimpan';
+            this.draftState = 'draft';
+            this.hasDraft = true;
+            saveDraft();
+            this.syncState();
+        },
+
         get gridRows() {
             return rows;
         },
 
-        addRow() {
+addRow() {
             addRow();
             this.syncState();
-            this.saveState = 'Perubahan belum disimpan';
+            this.markChanged();
         },
 
         insertRowAt(index) {
             insertRowAt(index);
             this.syncState();
-            this.saveState = 'Perubahan belum disimpan';
+            this.markChanged();
         },
 
-removeRow(index, event) {
+        removeRow(index, event) {
             if (event && event.stopPropagation) event.stopPropagation();
             deleteRows([index]);
             this.syncState();
-            this.saveState = 'Perubahan belum disimpan';
+            this.markChanged();
         },
 
         removeSelected() {
             deleteRows([...selectedRows]);
             this.syncState();
-            this.saveState = 'Perubahan belum disimpan';
+            this.markChanged();
         },
 
         duplicateRow(index) {
             duplicateRow(index);
             this.syncState();
-            this.saveState = 'Perubahan belum disimpan';
+            this.markChanged();
         },
 
         duplicateSelected() {
@@ -460,7 +535,7 @@ removeRow(index, event) {
             // Duplicate from last to first so inserted copies land below originals.
             [...indices].reverse().forEach((i) => duplicateRow(i));
             this.syncState();
-            this.saveState = 'Perubahan belum disimpan';
+            this.markChanged();
         },
 
         toggleSelect(index, event) {
@@ -505,11 +580,11 @@ removeRow(index, event) {
             this.dragOverRow = index;
         },
 
-        onDrop(index) {
+onDrop(index) {
             if (dragIdx >= 0 && dragIdx !== index) {
                 moveRow(dragIdx, index);
                 this.syncState();
-                this.saveState = 'Perubahan belum disimpan';
+                this.markChanged();
             }
             dragIdx = -1;
             dragOverRow = -1;
@@ -541,14 +616,14 @@ removeRow(index, event) {
             return editing && editing.row === index && editing.col === col;
         },
 
-        commitEdit(index, col, event) {
+commitEdit(index, col, event) {
             const value = event.target.value;
             rows[index][col] = value;
             markDirty(index);
             recalcCell(index, col);
             editing = null;
             this.syncState();
-            this.saveState = 'Perubahan belum disimpan';
+            this.markChanged();
         },
 
         cancelEdit() {
@@ -561,7 +636,7 @@ removeRow(index, event) {
             markDirty(index);
             recalcCell(index, col);
             this.syncState();
-            this.saveState = 'Perubahan belum disimpan';
+            this.markChanged();
         },
 
         onCellKeydown(index, col, event) {
@@ -627,7 +702,7 @@ removeRow(index, event) {
             return colKeys.indexOf(col) + 1;
         },
 
-        fillSelection(index, col) {
+fillSelection(index, col) {
             const value = rows[index][col];
             selectedRows.forEach((i) => {
                 if (i === index) return;
@@ -636,7 +711,7 @@ removeRow(index, event) {
                 recalcCell(i, col);
             });
             this.syncState();
-            this.saveState = 'Perubahan belum disimpan';
+            this.markChanged();
         },
 
         // Clipboard handlers
@@ -656,16 +731,16 @@ removeRow(index, event) {
             });
             recomputeAll();
             this.syncState();
-            this.saveState = 'Perubahan belum disimpan';
+            this.markChanged();
         },
 
-onPaste(event) {
+        onPaste(event) {
             const text = event.clipboardData ? event.clipboardData.getData('text/plain') : '';
             if (text) {
                 event.preventDefault();
                 pasteClipboard(text);
                 this.syncState();
-                this.saveState = 'Perubahan belum disimpan';
+                this.markChanged();
             }
         },
 
@@ -674,8 +749,29 @@ onPaste(event) {
             if (clipboard) {
                 applyPaste(clipboard.cols, clipboard.data);
                 this.syncState();
-                this.saveState = 'Perubahan belum disimpan';
+                this.markChanged();
             }
+        },
+
+        // Discard the local draft and reload server data (no backend call).
+        discardDraft() {
+            if (!this.hasDraft && dirtySet.size === 0) return;
+            if (!window.confirm('Buang draft yang belum disimpan? Perubahan akan hilang.')) {
+                return;
+            }
+            clearDraft();
+            dirtySet.clear();
+            // Reset to server-initialized rows.
+            rows = (config.initialRows || []).map(normalizeRow);
+            if (rows.length === 0) {
+                addRow(0);
+            }
+            recomputeAll();
+            this.draftState = 'clean';
+            this.hasDraft = false;
+            this.saveState = 'Belum disimpan';
+            this.saveMessage = '';
+            this.syncState();
         },
 
         // Totals (reactive)
@@ -721,8 +817,9 @@ onPaste(event) {
                 this.saveSuccess = false;
                 return;
             }
-            this.saving = true;
+this.saving = true;
             this.saveState = 'Menyimpan...';
+            this.draftState = 'saving';
             try {
                 const payload = buildPayload();
                 const res = await fetch(apiUrl, {
@@ -741,6 +838,9 @@ onPaste(event) {
                         ', dihapus: ' + data.deleted + ')';
                     this.saveSuccess = true;
                     this.saveState = 'Tersimpan';
+                    this.draftState = 'saved';
+                    this.hasDraft = false;
+                    clearDraft();
                     clearDirty();
                     this.syncState();
                     setTimeout(() => window.location.reload(), 600);
@@ -749,11 +849,13 @@ onPaste(event) {
                         (data.errors || []).map((e) => e.message).join('; ');
                     this.saveSuccess = false;
                     this.saveState = 'Gagal disimpan';
+                    this.draftState = 'draft';
                 }
             } catch (e) {
                 this.saveMessage = 'Terjadi kesalahan saat menyimpan: ' + e.message;
                 this.saveSuccess = false;
                 this.saveState = 'Gagal disimpan';
+                this.draftState = 'draft';
             } finally {
                 this.saving = false;
             }

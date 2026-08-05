@@ -1,28 +1,32 @@
-# ERET Dual-Table Worksheet — Implementation Tasks
+# SPRINT 5 — ERET Dual Table (Excel Mode) — TODO
 
-## Objective
-Implement TWO independent ERET tables in the dashboard spreadsheet:
-- **Table A = Manual Retribusi** (`entry_type = 'manual'`)
-- **Table B = E-Retribusi** (`entry_type = 'eret'`)
+## Status Baseline
+- [x] Verify baseline: 164 tests passed, 0 failed
+- [x] Analyze existing ERET spreadsheet implementation
 
-Each table has independent editable rows, add/delete, subtotals, calculations,
-and save logic. Only the final grand total combines values where the official
-ERET worksheet requires it. Saving Manual must NEVER delete E-Retribusi rows and
-vice versa.
+## FITUR 5 — Autosave Draft (localStorage)
+- [x] Add `draftKey` config in createEretSpreadsheet
+- [x] Add `saveDraft()` / `loadDraft()` / `clearDraft()` helpers
+- [x] Persist draft on edit / add / delete / duplicate / paste
+- [x] Restore draft on `init()`
+- [x] Clear draft after successful save
+- [x] Add `draftState` reactive state (clean | draft | saving | saved)
+- [x] Add `discardDraft()` method (confirm + reset, no backend call)
 
-## Steps
+## FITUR 6 — Validation Tooltip
+- [x] Add `title` hover tooltip on invalid cells
+- [x] Keep red border + inline error text
 
-- [x] Create migration to add `entry_type` column to `retributions` (default 'manual', indexed)
-- [x] Update `Retribution` model `$fillable` with `entry_type`
-- [x] Update `EretDashboardService` to accept and persist `entry_type` per row
-- [x] Scope delete-by-draft logic by `entry_type` (Manual save never deletes E-Retribusi rows)
-- [x] Update `EretDashboardSaveRequest` to validate optional `entry_type`
-- [x] Update `EretDashboardController` to pass `entry_type` from request to service
-- [x] Update `DashboardController` to split manual vs eret rows and compute separate subtotals + combined grand total
-- [x] Update `eret-spreadsheet.js` to include `entry_type` in payload and support unique grid id
-- [x] Update `dashboard.blade.php` to render two independent spreadsheet tables
-- [x] Update `config/eret.php` with group labels
-- [x] Add `tests/Feature/EretTwoTableTest.php` covering manual save, eret save, separate subtotals, combined grand total, delete scope, batch save, validation
-- [x] Run `php artisan test` and fix any failures
-- [x] Remove debug code / dead code
-- [x] Ensure `git status` is clean and commit changes
+## Clipboard
+- [x] Modern Clipboard API paste with fallback to hidden textarea
+- [x] Preserve Indonesian Excel numeric format
+
+## Dashboard UI
+- [x] Add "Draft" amber badge indicator
+- [x] Add "Saving..." blue badge during save
+- [x] Add "Saved" green badge after success
+- [x] Add "Buang Draft" button with confirmation
+
+## Verification
+- [ ] Run `php artisan test` — confirm 164 passed
+- [ ] Final report

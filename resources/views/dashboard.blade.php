@@ -399,22 +399,39 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-                {{-- Status input indicator --}}
+{{-- Status input indicator --}}
                 <span class="rounded-full {{ $sheet['accent'] === 'emerald' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' }} px-3 py-1 text-xs font-medium">
                     <span x-text="gridRows.length"></span> baris di spreadsheet
                 </span>
 
-                {{-- Dirty indicator --}}
-                <span x-show="dirtyCount > 0" x-cloak
+                {{-- Draft indicator (localStorage autosave) --}}
+                <span x-show="draftState === 'draft'" x-cloak
                       class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
-                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500 pulse-soft"></span>
-                    <span x-text="dirtyCount + ' perubahan belum disimpan'"></span>
+                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500 pulse-soft"></span>Draft
                 </span>
 
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
-                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 pulse-soft"></span>
+                {{-- Saving... indicator --}}
+                <span x-show="draftState === 'saving'" x-cloak
+                      class="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                    <span class="h-1.5 w-1.5 rounded-full bg-blue-500 pulse-soft"></span>Menyimpan...
+                </span>
+
+                {{-- Saved indicator --}}
+                <span x-show="draftState === 'saved'" x-cloak
+                      class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Tersimpan
+                </span>
+
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                     <span x-text="saveState"></span>
                 </span>
+
+                {{-- Discard draft button --}}
+                <button type="button" @click="discardDraft()" x-show="hasDraft" x-cloak
+                        title="Buang draft yang belum disimpan"
+                        class="inline-flex items-center rounded-lg border border-orange-300 px-3 py-2 text-xs font-semibold text-orange-600 transition hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-900/40">
+                    Buang Draft
+                </button>
 
                 {{-- Clipboard actions --}}
                 <button type="button" @click="onCopy()" title="Salin (Ctrl+C)"
@@ -498,9 +515,10 @@
                                 <span x-text="rowIndex + 1"></span>
                             </td>
                             <td>
-                                <select :value="row.market_id"
+<select :value="row.market_id"
                                         @change="onCellInput(rowIndex, 'market_id', $event)"
                                         @dblclick="startEdit(rowIndex, 'market_id')"
+                                        :title="cellError(rowIndex, 'market_id') || undefined"
                                         class="eret-select-input" :class="{'is-invalid': cellError(rowIndex, 'market_id')}">
                                     <option value="">-- Pilih Pasar --</option>
                                     <template x-for="m in markets" :key="m.id">
@@ -521,20 +539,22 @@
                                 </select>
                             </td>
                             <td data-row="rowIndex" data-col="nomor_setor">
-                                <input type="text" :value="row.nomor_setor"
+<input type="text" :value="row.nomor_setor"
                                        @input="onCellInput(rowIndex, 'nomor_setor', $event)"
                                        @keydown="onCellKeydown(rowIndex, 'nomor_setor', $event)"
                                        @dblclick="startEdit(rowIndex, 'nomor_setor')"
+                                       :title="cellError(rowIndex, 'nomor_setor') || undefined"
                                        placeholder="Nomor setor"
                                        class="eret-cell-input" :class="{'is-invalid': cellError(rowIndex, 'nomor_setor')}" style="text-align:left">
                                 <div class="row-error" :class="{'visible': cellError(rowIndex, 'nomor_setor')}" x-text="cellError(rowIndex, 'nomor_setor')"></div>
                             </td>
                             @foreach($colKeys as $colKey)
                             <td data-row="rowIndex" data-col="{{ $colKey }}">
-                                <input type="text" inputmode="decimal" :value="row.{{ $colKey }}"
+<input type="text" inputmode="decimal" :value="row.{{ $colKey }}"
                                        @input="onCellInput(rowIndex, '{{ $colKey }}', $event)"
                                        @keydown="onCellKeydown(rowIndex, '{{ $colKey }}', $event)"
                                        @dblclick="startEdit(rowIndex, '{{ $colKey }}')"
+                                       :title="cellError(rowIndex, '{{ $colKey }}') || undefined"
                                        class="eret-cell-input" :class="{'is-invalid': cellError(rowIndex, '{{ $colKey }}')}">
                                 <div class="row-error" :class="{'visible': cellError(rowIndex, '{{ $colKey }}')}" x-text="cellError(rowIndex, '{{ $colKey }}')"></div>
                             </td>
