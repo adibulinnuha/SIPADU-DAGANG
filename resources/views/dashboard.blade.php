@@ -517,7 +517,7 @@
                                 <span class="eret-drag-handle cursor-grab">⠿</span>
                                 <span x-text="rowIndex + 1"></span>
                             </td>
-                            <td>
+                            <td @click.stop>
 <select :value="row.market_id"
                                         @change="onCellInput(rowIndex, 'market_id', $event)"
                                         @dblclick="startEdit(rowIndex, 'market_id')"
@@ -530,7 +530,7 @@
                                 </select>
                                 <div class="row-error" :class="{'visible': cellError(rowIndex, 'market_id')}" x-text="cellError(rowIndex, 'market_id')"></div>
                             </td>
-                            <td>
+                            <td @click.stop>
                                 <select :value="row.petugas_id"
                                         @change="onCellInput(rowIndex, 'petugas_id', $event)"
                                         @dblclick="startEdit(rowIndex, 'petugas_id')"
@@ -541,25 +541,39 @@
                                     </template>
                                 </select>
                             </td>
-                            <td :data-row="rowIndex" data-col="nomor_setor">
-                                <input type="text" :value="row.nomor_setor"
+                            <td :data-row="rowIndex" data-col="nomor_setor"
+                                :class="{'eret-selected': isCellInRange(rowIndex, 0)}"
+                                @mousedown="onCellMouseDown(rowIndex, 'nomor_setor', $event)"
+                                @click.stop>
+                                <div class="eret-cell-outer">
+                                    <input type="text" :value="row.nomor_setor"
                                        @input="onCellInput(rowIndex, 'nomor_setor', $event)"
                                        @keydown="onCellKeydown(rowIndex, 'nomor_setor', $event)"
                                        @dblclick="startEdit(rowIndex, 'nomor_setor')"
                                        :title="cellError(rowIndex, 'nomor_setor') || undefined"
                                        placeholder="Nomor setor"
                                        class="eret-cell-input" :class="{'is-invalid': cellError(rowIndex, 'nomor_setor')}" style="text-align:left">
-                                <div class="row-error" :class="{'visible': cellError(rowIndex, 'nomor_setor')}" x-text="cellError(rowIndex, 'nomor_setor')"></div>
+                                    <div class="row-error" :class="{'visible': cellError(rowIndex, 'nomor_setor')}" x-text="cellError(rowIndex, 'nomor_setor')"></div>
+                                    <div class="eret-fill-handle" x-show="isActive(rowIndex, 0)"
+                                        @mousedown.stop.prevent="startFillDrag(rowIndex, 0)"></div>
+                                </div>
                             </td>
                             @foreach($colKeys as $colKey)
-                            <td :data-row="rowIndex" data-col="{{ $colKey }}">
-                                <input type="text" inputmode="decimal" :value="row.{{ $colKey }}"
+                            <td :data-row="rowIndex" data-col="{{ $colKey }}"
+                                :class="{'eret-selected': isCellInRange(rowIndex, {{ $loop->index + 1 }})}"
+                                @mousedown="onCellMouseDown(rowIndex, '{{ $colKey }}', $event)"
+                                @click.stop>
+                                <div class="eret-cell-outer">
+                                    <input type="text" inputmode="decimal" :value="row.{{ $colKey }}"
                                        @input="onCellInput(rowIndex, '{{ $colKey }}', $event)"
                                        @keydown="onCellKeydown(rowIndex, '{{ $colKey }}', $event)"
                                        @dblclick="startEdit(rowIndex, '{{ $colKey }}')"
                                        :title="cellError(rowIndex, '{{ $colKey }}') || undefined"
                                        class="eret-cell-input" :class="{'is-invalid': cellError(rowIndex, '{{ $colKey }}')}">
                                 <div class="row-error" :class="{'visible': cellError(rowIndex, '{{ $colKey }}')}" x-text="cellError(rowIndex, '{{ $colKey }}')"></div>
+                                <div class="eret-fill-handle" x-show="isActive(rowIndex, {{ $loop->index + 1 }})"
+                                    @mousedown.stop.prevent="startFillDrag(rowIndex, {{ $loop->index + 1 }})"></div>
+                                </div>
                             </td>
                             @endforeach
                             <td class="eret-num eret-total font-bold" x-text="fmtCell(row.total)"></td>

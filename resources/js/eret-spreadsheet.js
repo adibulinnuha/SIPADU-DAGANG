@@ -81,6 +81,7 @@ const csrfToken = config.csrfToken;
     let dropIdx = -1;
     let isSelecting = false;
     let isFillDragging = false;
+    let fillSource = null;
     let fillRange = null;
     let scrollEl = null;
     let virtualStart = 0;
@@ -152,7 +153,7 @@ const csrfToken = config.csrfToken;
         return set;
     };
 
-    const isCellInRange = (row, col) => {
+    const isCellSelectedInRange = (row, col) => {
         if (!selectionRange) return false;
         return row >= selectionRange.row1 && row <= selectionRange.row2
             && col >= selectionRange.col1 && col <= selectionRange.col2;
@@ -423,13 +424,171 @@ const clearDirty = () => {
             selectionRange = { row1: row, row2: row, col1: col, col2: col };
         }
         selectedRows = rowsFromRange(selectionRange);
+        scrollToActiveCell();
     };
+
+    const extendSelection = (row, col) => selectCell(row, col, true);
 
     const selectRange = (from, to) => {
         selectedRows = new Set();
         const lo = Math.min(from, to);
         const hi = Math.max(from, to);
         for (let i = lo; i <= hi; i += 1) selectedRows.add(i);
+    };
+
+    const stopSelection = () => {
+        if (isSelecting) {
+            isSelecting = false;
+        }
+    };
+
+    const getCellFromEvent = (event) => {
+        const el = event.target.closest('td[data-row][data-col]');
+        if (!el) return null;
+        return {
+            row: Number(el.dataset.row),
+            col: colKeyIndex(el.dataset.col),
+        };
+    };
+
+    const onSelectionMouseMove = (event) => {
+        if (isFillDragging) {
+            const destination = getCellFromEvent(event);
+            if (destination) {
+                updateFillRange(destination.row, destination.col);
+            }
+            return;
+        }
+        if (!isSelecting || !scrollEl) return;
+        const rect = scrollEl.getBoundingClientRect();
+        const destination = getCellFromEvent(event);
+        if (destination) {
+            extendSelection(destination.row, destination.col);
+            return;
+        }
+        const threshold = 20;
+        let delta = 0;
+        if (event.clientY < rect.top + threshold) delta = -20;
+        else if (event.clientY > rect.bottom - threshold) delta = 20;
+        if (delta !== 0) {
+            scrollEl.scrollTop = Math.max(0, Math.min(scrollEl.scrollHeight - rect.height, scrollEl.scrollTop + delta));
+            updateVirtualRange();
+            const approximateRow = Math.floor((event.clientY - rect.top + scrollEl.scrollTop) / rowHeight);
+            extendSelection(Math.max(0, Math.min(rows.length - 1, approximateRow)), activeCol);
+        }
+    };
+
+    const startCellSelection = (row, col, extend = false) => {
+        if (extend) {
+            extendSelection(row, col);
+        } else {
+            isSelecting = true;
+            selectionAnchor = { row, col };
+            selectCell(row, col, false);
+        }
+    };
+
+    const startFillDrag = (row, col) => {
+        if (row < 0 || row >= rows.length || col < 0 || col > colKeys.length) return;
+        isFillDragging = true;
+        fillSource = { row, col };
+        fillRange = { row1: row, row2: row, col1: col, col2: col };
+    };
+
+    const updateFillRange = (row, col) => {
+        if (!fillSource) return;
+        fillRange = normalizeRange(fillSource, { row, col });
+        selectionRange = fillRange;
+        selectedRows = rowsFromRange(selectionRange);
+    };
+
+    const stopFillDrag = () => {
+        if (!isFillDragging) return;
+        isFillDragging = false;
+        if (fillSource && fillRange) {
+            applyFillHandle();
+        }
+        fillSource = null;
+        fillRange = null;
+    };
+
+    const clampRow = (row) => Math.max(0, Math.min(rows.length - 1, row));
+    const clampCol = (col) => Math.max(0, Math.min(colKeys.length, col));
+
+    const navigateActiveCell = (row, col, extend = false) => {
+        if (rows.length === 0) return;
+        const targetRow = clampRow(row);
+        const targetCol = clampCol(col);
+        selectCell(targetRow, targetCol, extend);
+    };
+
+    const moveActiveCell = (dRow, dCol, extend = false) => {
+        const baseRow = activeRow >= 0 ? activeRow : 0;
+        const baseCol = activeCol >= 0 ? activeCol : 0;
+        navigateActiveCell(baseRow + dRow, baseCol + dCol, extend);
+    };
+
+    const getPageStep = () => {
+        if (!scrollEl) return 10;
+        return Math.max(1, Math.floor(scrollEl.clientHeight / rowHeight) - 1);
+    };
+
+    const applyFillHandle = () => {
+        if (!fillSource || !fillRange) return;
+        if (fillRange.row1 === fillRange.row2 && fillRange.col1 === fillRange.col2) return;
+        pushHistory();
+        const sourceKey = cellIndexToKey(fillSource.col);
+        const sourceValue = rows[fillSource.row][sourceKey];
+        const sourceNumber = parseNumeric(sourceValue);
+        const isVertical = fillRange.col1 === fillRange.col2;
+        const isHorizontal = fillRange.row1 === fillRange.row2;
+        const sequence = [];
+        if (isVertical) {
+            for (let r = Math.max(fillSource.row - 1, fillRange.row1); r <= Math.min(fillSource.row + 1, fillRange.row2); r += 1) {
+                sequence.push(parseNumeric(rows[r][sourceKey]));
+            }
+        } else if (isHorizontal) {
+            for (let c = Math.max(fillSource.col - 1, fillRange.col1); c <= Math.min(fillSource.col + 1, fillRange.col2); c += 1) {
+                sequence.push(parseNumeric(rows[fillSource.row][cellIndexToKey(c)]));
+            }
+        }
+        const hasSequence = sequence.length >= 2 && sequence.every((v) => !Number.isNaN(v));
+        const step = hasSequence ? sequence[sequence.length - 1] - sequence[sequence.length - 2] : 0;
+        for (let r = fillRange.row1; r <= fillRange.row2; r += 1) {
+            for (let c = fillRange.col1; c <= fillRange.col2; c += 1) {
+                if (r === fillSource.row && c === fillSource.col) continue;
+                const key = cellIndexToKey(c);
+                if (!key) continue;
+                if (hasSequence && isVertical && c === fillSource.col) {
+                    const distance = r - fillSource.row;
+                    rows[r][key] = sourceNumber + step * distance;
+                } else if (hasSequence && isHorizontal && r === fillSource.row) {
+                    const distance = c - fillSource.col;
+                    rows[r][key] = sourceNumber + step * distance;
+                } else {
+                    rows[r][key] = sourceValue;
+                }
+                markDirty(r);
+                if (key !== 'nomor_setor') recalcCell(r, key);
+            }
+        }
+        recomputeAll();
+        selectionAnchor = { row: fillSource.row, col: fillSource.col };
+        selectionRange = { ...fillRange };
+        selectedRows = rowsFromRange(selectionRange);
+    };
+
+    const scrollToActiveCell = () => {
+        if (!scrollEl || activeRow < 0) return;
+        const rowTop = activeRow * rowHeight;
+        const rowBottom = rowTop + rowHeight;
+        if (rowTop < scrollEl.scrollTop) {
+            scrollEl.scrollTop = rowTop;
+            updateVirtualRange();
+        } else if (rowBottom > scrollEl.scrollTop + scrollEl.clientHeight) {
+            scrollEl.scrollTop = rowBottom - scrollEl.clientHeight;
+            updateVirtualRange();
+        }
     };
 
     const clearSelectedCells = () => {
@@ -508,7 +667,6 @@ const clearDirty = () => {
     const pasteClipboard = (text) => {
         const raw = text || clipboardTextFromEvent();
         if (!raw) {
-            // fall back to internal clipboard
             if (clipboard) {
                 applyPaste(clipboard.cols, clipboard.data);
             }
@@ -526,10 +684,11 @@ const clearDirty = () => {
     const applyPaste = (cols, data) => {
         const startRow = activeRow >= 0 ? activeRow : 0;
         const startCol = activeCol >= 0 ? activeCol : 0;
+        pushHistory();
         data.forEach((rowVals, r) => {
             const targetRow = startRow + r;
             if (targetRow >= rows.length) {
-                addRow(rows.length);
+                addRow(rows.length, false);
             }
             rowVals.forEach((val, c) => {
                 const targetCol = startCol + c;
@@ -543,6 +702,14 @@ const clearDirty = () => {
             });
         });
         recomputeAll();
+        selectionAnchor = { row: startRow, col: startCol };
+        selectionRange = {
+            row1: startRow,
+            row2: Math.min(rows.length - 1, startRow + data.length - 1),
+            col1: startCol,
+            col2: Math.min(colKeys.length, startCol + (data[0]?.length || 1) - 1),
+        };
+        selectedRows = rowsFromRange(selectionRange);
     };
 
     // ── navigation ─────────────────────────────────────────────
@@ -557,10 +724,13 @@ const clearDirty = () => {
     };
 
     const focusCell = (row, col) => {
+        const resolvedCol = typeof col === 'number' ? col : colKeyIndex(col);
         activeRow = row;
-        activeCol = typeof col === 'number' ? col : colKeyIndex(col);
-        selectedRows = new Set([row]);
-        const el = thisCellEl(row, col);
+        activeCol = resolvedCol;
+        selectionAnchor = { row, col: resolvedCol };
+        selectionRange = { row1: row, row2: row, col1: resolvedCol, col2: resolvedCol };
+        selectedRows = rowsFromRange(selectionRange);
+        const el = thisCellEl(row, resolvedCol);
         if (el) {
             el.focus();
             if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
@@ -629,10 +799,27 @@ const clearDirty = () => {
             this.$nextTick(() => {
                 scrollEl = this.$refs.scroll;
                 if (scrollEl) {
-                    scrollEl.addEventListener('scroll', updateVirtualRange);
+                    // attach a single scroll handler per scroll container
+                    if (!scrollEl.__eret_scroll_handler_installed) {
+                        scrollEl.addEventListener('scroll', updateVirtualRange);
+                        scrollEl.__eret_scroll_handler_installed = true;
+                    }
                     updateVirtualRange();
                 }
-                window.addEventListener('keydown', (event) => this.onGlobalKeydown(event));
+                const rootEl = this.$el || document;
+                // Avoid attaching duplicate key/mouse handlers when multiple components mount.
+                if (!rootEl.__eret_key_handler_installed) {
+                    rootEl.addEventListener('keydown', (event) => this.onGlobalKeydown(event));
+                    rootEl.__eret_key_handler_installed = true;
+                }
+                if (!document.__eret_mouse_handlers_installed) {
+                    document.addEventListener('mousemove', onSelectionMouseMove);
+                    document.addEventListener('mouseup', () => {
+                        stopSelection();
+                        stopFillDrag();
+                    });
+                    document.__eret_mouse_handlers_installed = true;
+                }
             });
             window.addEventListener('beforeunload', (e) => {
                 if (dirtySet.size > 0) {
@@ -745,6 +932,10 @@ const clearDirty = () => {
             return selectedRows.has(index);
         },
 
+        isCellInRange(index, col) {
+            return isCellSelectedInRange(index, col);
+        },
+
         isActive(index, col) {
             return activeRow === index && activeCol === col;
         },
@@ -830,6 +1021,16 @@ commitEdit(index, col, event) {
             this.markChanged();
         },
 
+        onCellMouseDown(index, col, event) {
+            const colIdx = this.colKeyIndex(col);
+            if (event.shiftKey && selectionAnchor) {
+                extendSelection(index, colIdx);
+            } else {
+                startCellSelection(index, colIdx, false);
+            }
+            this.syncState();
+        },
+
         onCellKeydown(index, col, event) {
             const colIdx = colKeyIndex(col);
             const ctrl = event.ctrlKey || event.metaKey;
@@ -842,7 +1043,9 @@ commitEdit(index, col, event) {
                     }
                     event.preventDefault();
                     this.commitEdit(index, col, event);
-                    if (index + 1 < rows.length) {
+                    if (event.shiftKey) {
+                        if (index > 0) this.startEdit(index - 1, col);
+                    } else if (index + 1 < rows.length) {
                         this.startEdit(index + 1, col);
                     } else {
                         addRow(index + 1);
@@ -866,29 +1069,58 @@ commitEdit(index, col, event) {
                 case 'ArrowDown':
                     event.preventDefault();
                     this.commitEdit(index, col, event);
-                    if (index + 1 < rows.length) this.startEdit(index + 1, col);
+                    if (event.shiftKey) {
+                        extendSelection(Math.min(rows.length - 1, index + 1), colIdx);
+                        this.syncState();
+                    } else if (index + 1 < rows.length) {
+                        this.startEdit(index + 1, col);
+                    }
                     break;
                 case 'ArrowUp':
                     event.preventDefault();
                     this.commitEdit(index, col, event);
-                    if (index > 0) this.startEdit(index - 1, col);
+                    if (event.shiftKey) {
+                        extendSelection(Math.max(0, index - 1), colIdx);
+                        this.syncState();
+                    } else if (index > 0) {
+                        this.startEdit(index - 1, col);
+                    }
                     break;
                 case 'ArrowRight':
                     event.preventDefault();
                     this.commitEdit(index, col, event);
-                    if (colIdx < colKeys.length) this.startEdit(index, colIdx + 1);
+                    if (event.shiftKey) {
+                        extendSelection(index, Math.min(colKeys.length, colIdx + 1));
+                        this.syncState();
+                    } else if (colIdx < colKeys.length) {
+                        this.startEdit(index, colIdx + 1);
+                    }
                     break;
                 case 'ArrowLeft':
                     event.preventDefault();
                     this.commitEdit(index, col, event);
-                    if (colIdx > 0) this.startEdit(index, colIdx - 1);
+                    if (event.shiftKey) {
+                        extendSelection(index, Math.max(0, colIdx - 1));
+                        this.syncState();
+                    } else if (colIdx > 0) {
+                        this.startEdit(index, colIdx - 1);
+                    }
+                    break;
+                case 'PageDown':
+                    event.preventDefault();
+                    this.commitEdit(index, col, event);
+                    this.startEdit(Math.min(rows.length - 1, index + getPageStep()), col);
+                    break;
+                case 'PageUp':
+                    event.preventDefault();
+                    this.commitEdit(index, col, event);
+                    this.startEdit(Math.max(0, index - getPageStep()), col);
                     break;
                 case 'Home':
+                    event.preventDefault();
                     if (ctrl) {
-                        event.preventDefault();
                         this.startEdit(0, 0);
                     } else {
-                        event.preventDefault();
                         this.startEdit(index, 0);
                     }
                     break;
@@ -904,6 +1136,7 @@ commitEdit(index, col, event) {
                     if (!ctrl) {
                         event.preventDefault();
                         clearSelectedCells();
+                        this.syncState();
                     }
                     break;
                 default:
@@ -912,6 +1145,7 @@ commitEdit(index, col, event) {
         },
 
         colKeyIndex(col) {
+            if (typeof col === 'number') return col;
             if (col === 'nomor_setor') return 0;
             return colKeys.indexOf(col) + 1;
         },
@@ -995,8 +1229,75 @@ fillSelection(index, col) {
                     event.preventDefault();
                     this.pasteClipboard();
                 }
-            } else if (event.key === 'Delete') {
-                clearSelectedCells();
+            } else if (ctrl && event.key.toLowerCase() === 'a') {
+                event.preventDefault();
+                selectedRows = new Set(rows.map((_, i) => i));
+                selectionRange = { row1: 0, row2: rows.length - 1, col1: 0, col2: colKeys.length };
+                selectionAnchor = { row: 0, col: 0 };
+                this.syncState();
+            } else if (event.key === 'Escape') {
+                if (editing) {
+                    this.cancelEdit();
+                } else {
+                    selectedRows.clear();
+                    selectionRange = null;
+                    selectionAnchor = null;
+                    this.syncState();
+                }
+            } else if (!editing) {
+                const extend = event.shiftKey;
+                switch (event.key) {
+                    case 'ArrowDown':
+                        event.preventDefault();
+                        moveActiveCell(getPageStep() > 1 ? 1 : 1, 0, extend);
+                        this.syncState();
+                        break;
+                    case 'ArrowUp':
+                        event.preventDefault();
+                        moveActiveCell(-1, 0, extend);
+                        this.syncState();
+                        break;
+                    case 'ArrowRight':
+                        event.preventDefault();
+                        moveActiveCell(0, 1, extend);
+                        this.syncState();
+                        break;
+                    case 'ArrowLeft':
+                        event.preventDefault();
+                        moveActiveCell(0, -1, extend);
+                        this.syncState();
+                        break;
+                    case 'PageDown':
+                        event.preventDefault();
+                        moveActiveCell(getPageStep(), 0, extend);
+                        this.syncState();
+                        break;
+                    case 'PageUp':
+                        event.preventDefault();
+                        moveActiveCell(-getPageStep(), 0, extend);
+                        this.syncState();
+                        break;
+                    case 'Home':
+                        event.preventDefault();
+                        if (event.ctrlKey || event.metaKey) {
+                            navigateActiveCell(0, 0, extend);
+                        } else {
+                            navigateActiveCell(activeRow >= 0 ? activeRow : 0, 0, extend);
+                        }
+                        this.syncState();
+                        break;
+                    case 'End':
+                        event.preventDefault();
+                        if (event.ctrlKey || event.metaKey) {
+                            navigateActiveCell(rows.length - 1, colKeys.length, extend);
+                        } else {
+                            navigateActiveCell(activeRow >= 0 ? activeRow : 0, colKeys.length, extend);
+                        }
+                        this.syncState();
+                        break;
+                    default:
+                        break;
+                }
             }
         },
 
