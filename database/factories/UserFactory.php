@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Market;
 use App\Models\User;
 use App\UserRole;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -32,6 +33,16 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'role' => UserRole::Petugas,
             'remember_token' => Str::random(10),
+            'nip' => fake()->numerify('##########'),
+            'rank' => fake()->randomElement(['Penata', 'Pranata', 'Pembina']),
+            'jabatan' => fake()->randomElement(['Juru Pungut', 'Pengadministrasi Perkantoran']),
+            'phone' => null,
+            'notes' => null,
+            'is_active' => true,
+            'is_juru_pungut' => false,
+            'market_id' => function () {
+                return Market::query()->inRandomOrder()->first()?->id ?? null;
+            },
         ];
     }
 
@@ -44,4 +55,36 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    /**
+     * Assign the petugas to a specific market (and, for ERET Korwil records,
+     * mark them as an active Juru Pungut by default).
+     */
+    public function forMarket(Market $market): static
+    {
+        return $this->state(fn () => [
+            'market_id' => $market->id,
+        ]);
+    }
+
+    /**
+     * Mark the petugas as a Juru Pungut (appears in the ERET dropdown).
+     */
+    public function juruPungut(): static
+    {
+        return $this->state(fn () => [
+            'is_juru_pungut' => true,
+        ]);
+    }
+
+    /**
+     * Mark the petugas as inactive.
+     */
+    public function inactive(): static
+    {
+        return $this->state(fn () => [
+            'is_active' => false,
+        ]);
+    }
 }
+

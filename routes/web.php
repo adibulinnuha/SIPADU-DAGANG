@@ -71,7 +71,11 @@ Route::get('/dashboard', DashboardController::class)
     |--------------------------------------------------------------------------
     */
 
-    Route::resource('petugas', PetugasController::class);
+Route::resource('petugas', PetugasController::class)
+        ->parameters(['petugas' => 'petugas']);
+
+    Route::get('/api/markets/{market}/active-petugas', [PetugasController::class, 'activePetugas'])
+        ->name('api.markets.active-petugas');
 
     /*
     |--------------------------------------------------------------------------

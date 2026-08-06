@@ -19,6 +19,10 @@ export function createEretSpreadsheet(config) {
     const colKeys = config.colKeys || [];
     const markets = config.markets || [];
     const petugas = config.petugas || [];
+    // Async when a market changes: endpoint that returns active Juru Pungut
+    // for a given market ({ id, nama, nip }). Falls back to no-op for
+    // backward compatibility if not provided.
+    const petugasApiUrl = config.petugasApiUrl || '';
     const tanggal = config.tanggal;
 const csrfToken = config.csrfToken;
     const apiUrl = config.apiUrl;
@@ -840,6 +844,10 @@ const scrollToActiveCell = () => {
         markets,
         petugas,
         tanggal,
+        // Per-row petugas list resolved for the row's currently selected market.
+        // keyed by market id; falls back to the global list when empty.
+        petugasByMarket: {},
+        petugasLoading: false,
 saveState: 'Belum disimpan',
         saveMessage: '',
         saveSuccess: true,
@@ -912,6 +920,63 @@ saveState: 'Belum disimpan',
             this.colTotals = { ...colTotals };
             this.grandTotal = grandTotal;
             this.gridVersion += 1;
+        },
+
+        // Resolve the petugas list for a given row based on its selected market.
+        // When a market is selected and we have a per-market list, use it;
+        // otherwise fall back to the global (all active petugas) list.
+        petugasForRow(rowIndex) {
+            const row = rows[rowIndex];
+            if (!row) return petugas;
+            const marketId = row.market_id;
+            if (!marketId) return petugas;
+            const byMarket = this.petugasByMarket[marketId];
+            return byMarket || petugas;
+        },
+
+        // Called when the Pasar (market) select changes. Fetches the active
+        // Juru Pungut for that market via AJAX, updates the per-market cache,
+        // and clears the row's petugas selection (the old collector may not
+        // belong to the newly selected market).
+        async onMarketChange(rowIndex, event) {
+            const marketId = event.target.value;
+            rows[rowIndex].market_id = marketId;
+            rows[rowIndex].petugas_id = '';
+            markDirty(rowIndex);
+            this.syncState();
+            this.markChanged();
+
+            if (!marketId || !petugasApiUrl) {
+                return;
+            }
+
+            // Already cached — just re-render.
+            if (this.petugasByMarket[marketId]) {
+                this.syncState();
+                return;
+            }
+
+            this.petugasLoading = true;
+            try {
+const url = petugasApiUrl.replace('__MARKET__', marketId);
+                const res = await fetch(url, {
+                    headers: { 'Accept': 'application/json' },
+                });
+                if (!res.ok) throw new Error('Gagal memuat petugas');
+                const data = await res.json();
+                // Normalize { id, nama, nip } → { id, name } for the dropdown.
+                this.petugasByMarket[marketId] = (Array.isArray(data) ? data : []).map((p) => ({
+                    id: p.id,
+                    name: p.nama || p.name || '',
+                }));
+            } catch (e) {
+                // Keep the global list as a fallback so the user can still
+                // select a collector manually.
+                this.petugasByMarket[marketId] = petugas;
+            } finally {
+                this.petugasLoading = false;
+                this.syncState();
+            }
         },
 
         get gridRows() {

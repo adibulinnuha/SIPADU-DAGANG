@@ -471,8 +471,13 @@ class DashboardController extends Controller
 // --- Market list for filter dropdown ---
         $markets = Market::orderBy('name')->get();
 
-        // --- Petugas list for the spreadsheet input (role=petugas) ---
-        $petugas = User::where('role', 'petugas')->orderBy('name')->get();
+        // --- Petugas list for the spreadsheet input (role=petugas, active) ---
+        // The ERET dropdown filters these further by the selected market
+        // (is_juru_pungut + market_id) when a market is chosen.
+        $petugas = User::where('role', 'petugas')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
 
         // --- Render View ---
         return view('dashboard', compact(

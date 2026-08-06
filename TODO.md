@@ -1,23 +1,38 @@
-# TODO — Fix ERET Spreadsheet Save Error
+# TODO — Master Petugas Korwil + ERET Active Juru Pungut Integration
 
-## Task
-Fix `(data.errors || []).map is not a function` when saving the ERET spreadsheet.
+## Backend
+- [ ] Migration: add petugas fields to `users` (`market_id`, `nip`, `rank`, `jabatan`, `phone`, `notes`, `is_active`, `is_juru_pungut`)
+- [ ] Model `User`: fillable, casts, `belongsTo(Market)`, `forMarket()` factory state
+- [ ] Model `Market`: `hasMany(User)`
+- [ ] `PetugasController`: full CRUD + `activePetugas(Market)` JSON endpoint
+- [ ] `EretDashboardService`: validate inactive petugas; role=petugas must belong to market
+- [ ] `EretDashboardSaveRequest`: `petugas_id` required
+- [ ] `DashboardController`: pass only active petugas list
+- [ ] `UserFactory`: new fields + `forMarket()`
+- [ ] `PetugasSeeder` (idempotent) + register in `DatabaseSeeder`
 
-## Root Cause
-Frontend `saveRows()` in `resources/js/eret-spreadsheet.js` assumes `data.errors`
-is always an array. Laravel FormRequest validation (HTTP 422) returns `errors` as
-an **object** keyed by field, causing `data.errors.map(...)` to throw a TypeError.
+## Routes
+- [ ] `GET /api/markets/{market}/active-petugas` auth route
 
-## Steps
-- [x] 1. Investigate the save request (controller, service, request, JS).
-- [x] 2. Confirm root cause (frontend-only: `data.errors` shape mismatch).
-- [x] 3. Add robust error-message formatter in `resources/js/eret-spreadsheet.js`
-     handling all shapes:
-     - Array of `{message}` objects
-     - Array of plain strings
-     - Object (Laravel 422 validation, keyed by field)
-     - `data.message` string fallback
-- [x] 4. Wire the formatter into `saveRows()` and check `res.ok`/HTTP status.
-- [ ] 5. Rebuild assets.
-- [ ] 6. Run the full test suite.
-- [ ] 7. Report root cause, files changed, example JSON, test results.
+## Frontend
+- [ ] `dashboard.blade.php`: per-row petugas list, loading indicator
+- [ ] `eret-spreadsheet.js`: market-change AJAX, clear petugas, loading state
+
+## Views / UI
+- [ ] `petugas/index` (search, pagination, Aktif/Nonaktif badge)
+- [ ] `petugas/create`, `petugas/edit`
+- [ ] sidebar + navigation links to Master Petugas
+
+## Tests
+- [ ] `PetugasTest` (CRUD, active filter, market filter, JSON shape, save validation)
+
+## Docs
+- [ ] README updates (Master Petugas, seeder, API, migrations, tests)
+
+## Verification
+- [ ] `php artisan test` pass
+- [ ] `php artisan migrate:fresh --seed` works
+- [ ] `npm run build` works
+- [ ] `git status` clean
+- [ ] commit `feat: complete Master Petugas Korwil and ERET active collector integration`
+

@@ -21,7 +21,7 @@ class EretDashboardSaveRequest extends FormRequest
             'rows' => ['required', 'array'],
             'rows.*.id' => ['nullable', 'integer'],
             'rows.*.market_id' => ['required', 'integer', 'exists:markets,id'],
-            'rows.*.petugas_id' => ['nullable', 'integer', 'exists:users,id'],
+            'rows.*.petugas_id' => ['required', 'integer', 'exists:users,id'],
             'rows.*.nomor_setor' => ['nullable', 'string', 'max:100'],
             'rows.*.entry_type' => ['nullable', 'string', 'in:manual,eret'],
             'rows.*.kios' => $numericRule,

@@ -1,0 +1,48 @@
+warning: in the working copy of 'app/Http/Requests/EretDashboardSaveRequest.php', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'app/Services/EretDashboardService.php', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'resources/js/eret-spreadsheet.js', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'resources/views/layouts/sidebar.blade.php', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'resources/views/petugas/create.blade.php', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'resources/views/petugas/edit.blade.php', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'resources/views/petugas/index.blade.php', CRLF will be replaced by LF the next time Git touches it
+ TODO.md                                        |  61 [32m++++++[m[31m----[m
+ app/Http/Controllers/DashboardController.php   |   9 [32m+[m[31m-[m
+ app/Http/Controllers/PetugasController.php     | 141 [32m+++++++++++++++++[m[31m----[m
+ app/Http/Requests/EretDashboardSaveRequest.php |   2 [32m+[m[31m-[m
+ app/Models/Market.php                          |   9 [32m++[m
+ app/Models/User.php                            |  39 [32m+++++[m[31m-[m
+ app/Services/EretDashboardService.php          |  18 [32m++[m[31m-[m
+ database/factories/UserFactory.php             |  43 [32m+++++++[m
+ database/seeders/DatabaseSeeder.php            |   2 [32m+[m
+ resources/js/eret-spreadsheet.js               |  65 [32m++++++++++[m
+ resources/views/dashboard.blade.php            |   6 [32m+[m[31m-[m
+ resources/views/layouts/sidebar.blade.php      |  11 [32m+[m[31m-[m
+ resources/views/petugas/create.blade.php       | 154 [32m+++++++++++++++++++++[m[31m--[m
+ resources/views/petugas/edit.blade.php         | 162 [32m++++++++++++++++++++++[m[31m---[m
+ resources/views/petugas/index.blade.php        |  89 [32m+++++++++++[m[31m---[m
+ routes/web.php                                 |   6 [32m+[m[31m-[m
+ 16 files changed, 717 insertions(+), 100 deletions(-)
+warning: in the working copy of 'app/Http/Requests/EretDashboardSaveRequest.php', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'app/Services/EretDashboardService.php', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'resources/js/eret-spreadsheet.js', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'resources/views/layouts/sidebar.blade.php', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'resources/views/petugas/create.blade.php', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'resources/views/petugas/edit.blade.php', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'resources/views/petugas/index.blade.php', CRLF will be replaced by LF the next time Git touches it
+ TODO.md                                        |  61 [32m++++++[m[31m----[m
+ app/Http/Controllers/DashboardController.php   |   9 [32m+[m[31m-[m
+ app/Http/Controllers/PetugasController.php     | 141 [32m+++++++++++++++++[m[31m----[m
+ app/Http/Requests/EretDashboardSaveRequest.php |   2 [32m+[m[31m-[m
+ app/Models/Market.php                          |   9 [32m++[m
+ app/Models/User.php                            |  39 [32m+++++[m[31m-[m
+ app/Services/EretDashboardService.php          |  18 [32m++[m[31m-[m
+ database/factories/UserFactory.php             |  43 [32m+++++++[m
+ database/seeders/DatabaseSeeder.php            |   2 [32m+[m
+ resources/js/eret-spreadsheet.js               |  65 [32m++++++++++[m
+ resources/views/dashboard.blade.php            |   6 [32m+[m[31m-[m
+ resources/views/layouts/sidebar.blade.php      |  11 [32m+[m[31m-[m
+ resources/views/petugas/create.blade.php       | 154 [32m+++++++++++++++++++++[m[31m--[m
+ resources/views/petugas/edit.blade.php         | 162 [32m++++++++++++++++++++++[m[31m---[m
+ resources/views/petugas/index.blade.php        |  89 [32m+++++++++++[m[31m---[m
+ routes/web.php                                 |   6 [32m+[m[31m-[m
+ 16 files changed, 717 insertions(+), 100 deletions(-)

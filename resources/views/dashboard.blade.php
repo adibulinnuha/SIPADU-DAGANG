@@ -380,6 +380,7 @@
             colKeys: @json($colKeys),
             markets: @json($markets->map(fn($m) => ['id' => $m->id, 'name' => $m->name])->values()),
             petugas: @json($petugas->map(fn($p) => ['id' => $p->id, 'name' => $p->name])->values()),
+petugasApiUrl: @json(route('api.markets.active-petugas', ['market' => '__MARKET__'])),
             tanggal: @json($filters['tanggal']),
             csrfToken: @json(csrf_token()),
             apiUrl: @json(route('dashboard.eret.save')),
@@ -519,7 +520,7 @@
                             </td>
                             <td @click.stop>
 <select :value="row.market_id"
-                                        @change="onCellInput(rowIndex, 'market_id', $event)"
+                                        @change="onMarketChange(rowIndex, $event)"
                                         @dblclick="startEdit(rowIndex, 'market_id')"
                                         :title="cellError(rowIndex, 'market_id') || undefined"
                                         class="eret-select-input" :class="{'is-invalid': cellError(rowIndex, 'market_id')}">
@@ -536,10 +537,11 @@
                                         @dblclick="startEdit(rowIndex, 'petugas_id')"
                                         class="eret-select-input">
                                     <option value="">-- Petugas --</option>
-                                    <template x-for="p in petugas" :key="p.id">
+                                    <template x-for="p in petugasForRow(rowIndex)" :key="p.id">
                                         <option :value="p.id" x-text="p.name"></option>
                                     </template>
                                 </select>
+                                <div class="row-error" :class="{'visible': cellError(rowIndex, 'petugas_id')}" x-text="cellError(rowIndex, 'petugas_id')"></div>
                             </td>
                             <td :data-row="rowIndex" data-col="nomor_setor"
                                 :class="{'eret-selected': isCellInRange(rowIndex, 0)}"

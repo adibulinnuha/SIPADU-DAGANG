@@ -224,8 +224,22 @@ class EretDashboardService
             }
         }
 
-        if (! empty($row['petugas_id']) && ! User::whereKey($row['petugas_id'])->exists()) {
-            $errors[] = ['row' => $index, 'field' => 'petugas_id', 'message' => 'Petugas tidak valid.'];
+        if (empty($row['petugas_id'])) {
+            $errors[] = ['row' => $index, 'field' => 'petugas_id', 'message' => 'Petugas wajib diisi.'];
+        } else {
+            $petugas = User::whereKey($row['petugas_id'])->first();
+
+            if (! $petugas) {
+                $errors[] = ['row' => $index, 'field' => 'petugas_id', 'message' => 'Petugas tidak valid.'];
+            } elseif (! $petugas->is_active) {
+                $errors[] = ['row' => $index, 'field' => 'petugas_id', 'message' => 'Petugas tidak aktif.'];
+            } elseif ($petugas->role === \App\UserRole::Petugas
+                && (int) $petugas->market_id !== (int) $row['market_id']) {
+                // Non-admin (role=petugas) recorders must belong to the selected
+                // market. Admin users are allowed to create records for any
+                // market (backward compatible with existing flows).
+                $errors[] = ['row' => $index, 'field' => 'petugas_id', 'message' => 'Petugas bukan milik pasar terpilih.'];
+            }
         }
 
         // Validate numeric columns.

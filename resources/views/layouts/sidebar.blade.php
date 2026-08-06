@@ -67,12 +67,21 @@
 
         </a>
 
-        <a href="{{ route('retributions.index') }}"
+<a href="{{ route('retributions.index') }}"
            class="flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200
            {{ request()->routeIs('retributions.*') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
 
             <span class="text-lg">💰</span>
             <span>Retribusi</span>
+
+        </a>
+
+        <a href="{{ route('petugas.index') }}"
+           class="flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200
+           {{ request()->routeIs('petugas.*') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
+
+            <span class="text-lg">🧑‍🤝‍🧑</span>
+            <span>Master Petugas</span>
 
         </a>
 
