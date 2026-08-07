@@ -20,4 +20,4 @@ Harden `WorkbookEngine` for PhpSpreadsheet 1.30.6 compatibility and add regressi
 - [x] Run `php artisan test` (193 passed)
 - [x] Run `npm run build`
 - [x] Verify export from official ERET template (no errors/warnings)
-- [ ] Commit: `test: strengthen WorkbookEngine compatibility and regression coverage`
+- [x] Commit: `test: strengthen WorkbookEngine compatibility and regression coverage`
