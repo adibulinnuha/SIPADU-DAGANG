@@ -185,13 +185,21 @@ php artisan test
 php artisan test --filter=Workflow
 php artisan test --filter=Bendel
 php artisan test --filter=Verification
+php artisan test --filter=Backup
+php artisan test --filter=OcrHardening
+php artisan test --filter=WorkbookIntegrity
 
 # Code quality
 php vendor/bin/pint          # Laravel Pint (code style)
 php vendor/bin/phpstan analyse --level=5 app routes   # Static analysis
 ```
 
-Current test count: **51 tests** (157 assertions)
+Current test count: **224 tests** (944 assertions)
+
+Key test suites (Sprint 8):
+- `BackupFeatureTest` — 12 tests covering backup/restore lifecycle, admin auth, validation
+- `OcrHardeningTest` — 15 tests covering OCR pipeline robustness (failures, fallbacks, validation)
+- `WorkbookIntegrityTest` — 4 tests covering final workbook integrity (file size, openability, merges, formulas, data)
 
 ---
 

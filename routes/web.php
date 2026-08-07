@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BendelController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EretDashboardController;
@@ -129,9 +130,30 @@ Route::resource('petugas', PetugasController::class)
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware('role:admin')->group(function () {
+Route::middleware('role:admin')->group(function () {
 
         Route::resource('users', UserController::class);
+
+        /*
+        |--------------------------------------------------------------------------
+        | BACKUP & RESTORE (Admin only)
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/backups', [BackupController::class, 'index'])
+            ->name('backup.index');
+
+        Route::post('/backups', [BackupController::class, 'create'])
+            ->name('backup.create');
+
+        Route::get('/backups/{filename}/download', [BackupController::class, 'download'])
+            ->name('backup.download');
+
+        Route::delete('/backups/{filename}', [BackupController::class, 'destroy'])
+            ->name('backup.destroy');
+
+        Route::post('/backups/{filename}/restore', [BackupController::class, 'restore'])
+            ->name('backup.restore');
 
     });
 
