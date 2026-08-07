@@ -20,6 +20,20 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
  */
 class WorkbookEngine
 {
+    /**
+     * PhpSpreadsheet API methods we depend on. If any of these are missing,
+     * the installed PhpSpreadsheet version is incompatible with WorkbookEngine.
+     *
+     * NOTE: `Coordinate::coordinateIsInsideRange()` is intentionally NOT listed
+     * because it was removed in PhpSpreadsheet 1.x. We use the compatible
+     * `isCellInRange()` helper instead.
+     */
+    private const REQUIRED_COORDINATE_METHODS = [
+        'coordinateFromString',
+        'columnIndexFromString',
+        'stringFromColumnIndex',
+    ];
+
     private ?Spreadsheet $spreadsheet = null;
     private ?Worksheet $sheet = null;
     private string $templatePath = '';
@@ -37,6 +51,8 @@ class WorkbookEngine
                 'Template ERET tidak ditemukan: '.$templatePath
             );
         }
+
+        $this->assertPhpSpreadsheetCompatible();
 
         $this->templatePath = $templatePath;
         $this->spreadsheet = IOFactory::load($templatePath);
@@ -193,6 +209,18 @@ class WorkbookEngine
     }
 
     /**
+     * Read the cell value formatted according to its number format.
+     *
+     * This is useful for verifying that number formats (e.g. "#,##0") are
+     * preserved and rendered correctly after an export.
+     */
+    public function getFormattedValue(string $cell): string
+    {
+        $this->assertSheetSelected();
+        return $this->sheet->getCell($cell)->getFormattedValue();
+    }
+
+    /**
      * Check whether a cell contains an Excel formula.
      */
     public function isFormulaCell(string $cell): bool
@@ -202,41 +230,53 @@ class WorkbookEngine
     }
 
     /**
+     * Determine whether a single cell coordinate falls inside a range string.
+     *
+     * This is a compatible, dependency-free replacement for the removed
+     * `Coordinate::coordinateIsInsideRange()` method (unavailable since
+     * PhpSpreadsheet 1.x). The range may be a single cell ("A1") or a
+     * colon-separated rect ("A1:B5").
+     */
+    public function isCellInRange(string $cell, string $range): bool
+    {
+        [$targetCol, $targetRow] = Coordinate::coordinateFromString($cell);
+        $targetColIndex = Coordinate::columnIndexFromString($targetCol);
+        $targetRow = (int) $targetRow;
+
+        // Single-cell range
+        if (! str_contains($range, ':')) {
+            return $this->normalizeCell($range) === $this->normalizeCell($cell);
+        }
+
+        [$start, $end] = explode(':', $range, 2);
+
+        [$startCol, $startRow] = Coordinate::coordinateFromString($start);
+        [$endCol, $endRow] = Coordinate::coordinateFromString($end);
+
+        $startColIndex = Coordinate::columnIndexFromString($startCol);
+        $endColIndex = Coordinate::columnIndexFromString($endCol);
+        $startRow = (int) $startRow;
+        $endRow = (int) $endRow;
+
+        return $targetColIndex >= $startColIndex
+            && $targetColIndex <= $endColIndex
+            && $targetRow >= $startRow
+            && $targetRow <= $endRow;
+    }
+
+    /**
      * Check whether a cell is part of a merged range.
      */
     public function isMergedCell(string $cell): bool
     {
         $this->assertSheetSelected();
 
-        [$targetCol, $targetRow] = Coordinate::coordinateFromString($cell);
-        $targetColIndex = Coordinate::columnIndexFromString($targetCol);
-        $targetRow = (int) $targetRow;
-
         foreach ($this->mergedCells as $mergedRange) {
-            if (str_contains($mergedRange, ':')) {
-                [$start, $end] = explode(':', $mergedRange);
-            } else {
-                if ($mergedRange === $cell) {
-                    return true;
-                }
-                continue;
-            }
-
-            [$startCol, $startRow] = Coordinate::coordinateFromString($start);
-            [$endCol, $endRow] = Coordinate::coordinateFromString($end);
-
-            $startColIndex = Coordinate::columnIndexFromString($startCol);
-            $endColIndex = Coordinate::columnIndexFromString($endCol);
-            $startRow = (int) $startRow;
-            $endRow = (int) $endRow;
-
-            if ($targetColIndex >= $startColIndex
-                && $targetColIndex <= $endColIndex
-                && $targetRow >= $startRow
-                && $targetRow <= $endRow) {
+            if ($this->isCellInRange($cell, $mergedRange)) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -410,8 +450,39 @@ class WorkbookEngine
     }
 
     // -----------------------------------------------------------------------
-    //  Internal assertions
+    //  Internal helpers
     // -----------------------------------------------------------------------
+
+    /**
+     * Verify that the installed PhpSpreadsheet provides the API surface that
+     * WorkbookEngine depends on. Throws a clear, actionable exception if the
+     * installed version is incompatible.
+     *
+     * This is cheap (a few method_exists calls) and runs once per load().
+     */
+    private function assertPhpSpreadsheetCompatible(): void
+    {
+        $coordinateClass = Coordinate::class;
+
+        foreach (self::REQUIRED_COORDINATE_METHODS as $method) {
+            if (! method_exists($coordinateClass, $method)) {
+                throw new \RuntimeException(
+                    "WorkbookEngine: PhpSpreadsheet tidak kompatibel. ".
+                    "Metode {$coordinateClass}::{$method}() tidak ditemukan. ".
+                    'Pastikan versi phpoffice/phpspreadsheet >= 1.x terpasang '.
+                    '(lihat composer.lock).'
+                );
+            }
+        }
+    }
+
+    /**
+     * Normalize a cell reference to an uppercase, trimmed form without '$'.
+     */
+    private function normalizeCell(string $cell): string
+    {
+        return str_replace('$', '', strtoupper(trim($cell)));
+    }
 
     private function assertLoaded(): void
     {

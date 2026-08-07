@@ -1,38 +1,23 @@
-# TODO — Master Petugas Korwil + ERET Active Juru Pungut Integration
+# Sprint 7 — Workbook Engine & Excel Export Stabilization
 
-## Backend
-- [ ] Migration: add petugas fields to `users` (`market_id`, `nip`, `rank`, `jabatan`, `phone`, `notes`, `is_active`, `is_juru_pungut`)
-- [ ] Model `User`: fillable, casts, `belongsTo(Market)`, `forMarket()` factory state
-- [ ] Model `Market`: `hasMany(User)`
-- [ ] `PetugasController`: full CRUD + `activePetugas(Market)` JSON endpoint
-- [ ] `EretDashboardService`: validate inactive petugas; role=petugas must belong to market
-- [ ] `EretDashboardSaveRequest`: `petugas_id` required
-- [ ] `DashboardController`: pass only active petugas list
-- [ ] `UserFactory`: new fields + `forMarket()`
-- [ ] `PetugasSeeder` (idempotent) + register in `DatabaseSeeder`
+## Objective
+Harden `WorkbookEngine` for PhpSpreadsheet 1.30.6 compatibility and add regression protection. No refactor of stable modules.
 
-## Routes
-- [ ] `GET /api/markets/{market}/active-petugas` auth route
+## Audit Findings
+- Installed PhpSpreadsheet: **1.30.6**
+- `Coordinate::coordinateIsInsideRange()` **does not exist** in 1.30.6 (removed in 1.x).
+- Current `WorkbookEngine::isMergedCell()` already uses a manual, compatible range-parsing implementation.
+- No deprecated APIs (`getCellByColumnAndRow`, `setCellValueByColumnAndRow`, etc.) in use.
+- All 181 existing tests pass.
 
-## Frontend
-- [ ] `dashboard.blade.php`: per-row petugas list, loading indicator
-- [ ] `eret-spreadsheet.js`: market-change AJAX, clear petugas, loading state
-
-## Views / UI
-- [ ] `petugas/index` (search, pagination, Aktif/Nonaktif badge)
-- [ ] `petugas/create`, `petugas/edit`
-- [ ] sidebar + navigation links to Master Petugas
-
-## Tests
-- [ ] `PetugasTest` (CRUD, active filter, market filter, JSON shape, save validation)
-
-## Docs
-- [ ] README updates (Master Petugas, seeder, API, migrations, tests)
-
-## Verification
-- [ ] `php artisan test` pass
-- [ ] `php artisan migrate:fresh --seed` works
-- [ ] `npm run build` works
-- [ ] `git status` clean
-- [ ] commit `feat: complete Master Petugas Korwil and ERET active collector integration`
-
+## Steps
+- [x] Audit WorkbookEngine and PhpSpreadsheet API usage
+- [x] Confirm root cause of `coordinateIsInsideRange()` incompatibility
+- [x] Add `assertPhpSpreadsheetCompatible()` guard to WorkbookEngine
+- [x] Add `isCellInRange()` compatible helper; refactor `isMergedCell()` to use it
+- [x] Add `getFormattedValue()` for number-format verification
+- [x] Add regression tests (workbook generation, merged cells, formulas, styles, row heights, column widths, number formats, export success, compatibility guard)
+- [x] Run `php artisan test` (193 passed)
+- [x] Run `npm run build`
+- [x] Verify export from official ERET template (no errors/warnings)
+- [ ] Commit: `test: strengthen WorkbookEngine compatibility and regression coverage`
