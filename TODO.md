@@ -42,5 +42,5 @@ Tidak ada fitur bisnis baru. Target: Release Candidate Final.
 - [x] Smoke Test PASS
 - [x] Regression Test PASS
 - [x] UAT PASS
-- [ ] `git status` bersih
-- [ ] Commit + push ke `origin/blackboxai/sprint4-workbook-test`
+- [x] `git status` bersih
+- [x] Commit (`e16cef3`) + push ke `origin/blackboxai/sprint4-workbook-test`
