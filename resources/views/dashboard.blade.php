@@ -405,10 +405,10 @@ petugasApiUrl: @json(route('markets.active-petugas', ['market' => '__MARKET__'])
                     <span x-text="rowCount"></span> baris di spreadsheet
                 </span>
 
-                {{-- Draft indicator (localStorage autosave) --}}
+                {{--  indicator (localStorage autosave) --}}
                 <span x-show="draftState === 'draft'" x-cloak
                       class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
-                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500 pulse-soft"></span>Draft
+                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500 pulse-soft"></span>
                 </span>
 
                 {{-- Saving... indicator --}}
@@ -428,34 +428,34 @@ petugasApiUrl: @json(route('markets.active-petugas', ['market' => '__MARKET__'])
                 </span>
 
                 {{-- Discard draft button --}}
-                <button type="button" @click="discardDraft()" x-show="hasDraft" x-cloak
+                <button type="button" @click="discard()" x-show="has" x-cloak
                         title="Buang draft yang belum disimpan"
                         class="inline-flex items-center rounded-lg border border-orange-300 px-3 py-2 text-xs font-semibold text-orange-600 transition hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-900/40">
-                    Buang Draft
+                    Buang 
                 </button>
 
                 {{-- Clipboard actions --}}
-                <button type="button" @click="onCopy()" title="Salin (Ctrl+C)"
+                <button type="button" @click="onCopy()" title=" (Ctrl+C)"
                         class="inline-flex items-center rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">
-                    Salin
+                    
                 </button>
-                <button type="button" @click="onCut()" title="Potong (Ctrl+X)"
+                <button type="button" @click="onCut()" title=" (Ctrl+X)"
                         class="inline-flex items-center rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">
-                    Potong
+                    
                 </button>
-                <button type="button" @click="pasteClipboard()" title="Tempel (Ctrl+V)"
+                <button type="button" @click="pasteClipboard()" title=" (Ctrl+V)"
                         class="inline-flex items-center rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">
-                    Tempel
+                    
                 </button>
 
                 {{-- Row selection actions --}}
-                <button type="button" @click="duplicateSelected()" title="Duplikat baris terpilih"
+                <button type="button" @click="duplicateSelected()" title=" baris terpilih"
                         class="inline-flex items-center rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">
-                    Duplikat
+                    
                 </button>
                 <button type="button" @click="removeSelected()" title="Hapus baris terpilih"
                         class="inline-flex items-center rounded-lg border border-red-300 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-900/40">
-                    Hapus Terpilih
+                    
                 </button>
 
                 <button type="button" @click="addBlankRow()"
@@ -583,7 +583,7 @@ petugasApiUrl: @json(route('markets.active-petugas', ['market' => '__MARKET__'])
                                 <div class="eret-actions">
                                     <button type="button" @click="insertRowAt(rowIndex)" title="Sisipkan baris di atas"
                                             class="eret-btn eret-btn-add">+</button>
-                                    <button type="button" @click="duplicateRow(rowIndex)" title="Duplikat baris"
+                                    <button type="button" @click="duplicateRow(rowIndex)" title=" baris"
                                             class="eret-btn eret-btn-add">+</button>
                                     <button type="button" @click="removeRow(rowIndex, $event)" title="Hapus baris"
                                             class="eret-btn eret-btn-del">Hapus</button>
@@ -710,7 +710,7 @@ petugasApiUrl: @json(route('markets.active-petugas', ['market' => '__MARKET__'])
                             <div class="flex flex-wrap items-center justify-center gap-1.5">
                                 @php
                                     $wfBadges = [
-                                        'draft' => ['Draft', 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'],
+                                        'draft' => ['', 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'],
                                         'submitted' => ['Submitted', 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'],
                                         'verified' => ['Verified', 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'],
                                         'approved' => ['Approved', 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'],
@@ -1190,6 +1190,7 @@ function createEretSpreadsheet(config) {
     ```html
 <script>
 </x-layouts.app>
+
 
 
 
