@@ -124,7 +124,7 @@ test('active petugas endpoint returns only active juru pungut for the market', f
     // Active juru pungut in a different market — must be excluded.
     createPetugasFor($otherMarket, ['name' => 'PENYUSUP', 'is_juru_pungut' => true]);
 
-    $response = $this->getJson(route('api.markets.active-petugas', $market))
+    $response = $this->getJson(route('markets.active-petugas', $market))
         ->assertOk();
 
     $data = $response->json();

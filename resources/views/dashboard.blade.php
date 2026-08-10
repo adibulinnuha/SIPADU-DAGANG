@@ -380,7 +380,7 @@
             colKeys: @json($colKeys),
             markets: @json($markets->map(fn($m) => ['id' => $m->id, 'name' => $m->name])->values()),
             petugas: @json($petugas->map(fn($p) => ['id' => $p->id, 'name' => $p->name])->values()),
-petugasApiUrl: @json(route('api.markets.active-petugas', ['market' => '__MARKET__'])),
+petugasApiUrl: @json(route('markets.active-petugas', ['market' => '__MARKET__'])),
             tanggal: @json($filters['tanggal']),
             csrfToken: @json(csrf_token()),
             apiUrl: @json(route('dashboard.eret.save')),

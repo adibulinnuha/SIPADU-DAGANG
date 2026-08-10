@@ -21,9 +21,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-
     return redirect()->route('login');
-
 });
 
 Route::middleware(['auth'])->group(function () {
@@ -33,8 +31,7 @@ Route::middleware(['auth'])->group(function () {
     | DASHBOARD
     |--------------------------------------------------------------------------
     */
-
-Route::get('/dashboard', DashboardController::class)
+    Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
 
     Route::post('/dashboard/eret/save', [EretDashboardController::class, 'save'])
@@ -45,7 +42,6 @@ Route::get('/dashboard', DashboardController::class)
     | OCR e-Ticketing
     |--------------------------------------------------------------------------
     */
-
     Route::get('/ocr', [OcrController::class, 'index'])
         ->name('ocr.index');
 
@@ -63,7 +59,6 @@ Route::get('/dashboard', DashboardController::class)
     | MASTER DATA PASAR
     |--------------------------------------------------------------------------
     */
-
     Route::resource('markets', MarketController::class);
 
     /*
@@ -71,19 +66,18 @@ Route::get('/dashboard', DashboardController::class)
     | PETUGAS
     |--------------------------------------------------------------------------
     */
-
-Route::resource('petugas', PetugasController::class)
+    Route::resource('petugas', PetugasController::class)
         ->parameters(['petugas' => 'petugas']);
 
-    Route::get('/api/markets/{market}/active-petugas', [PetugasController::class, 'activePetugas'])
-        ->name('api.markets.active-petugas');
+    // Endpoint dropdown Juru Pungut aktif per pasar (dipakai dashboard ERET)
+    Route::get('/markets/{market}/active-petugas', [PetugasController::class, 'activePetugas'])
+        ->name('markets.active-petugas');
 
     /*
     |--------------------------------------------------------------------------
     | RETRIBUSI
     |--------------------------------------------------------------------------
     */
-
     Route::get('/retributions/export-template', [RetributionsExportController::class, 'template'])
         ->name('retributions.export-template');
 
@@ -97,7 +91,6 @@ Route::resource('petugas', PetugasController::class)
     | REKAP HARIAN
     |--------------------------------------------------------------------------
     */
-
     Route::get('/rekap-harian', [RekapHarianController::class, 'index'])
         ->name('rekap-harian.index');
 
@@ -109,7 +102,6 @@ Route::resource('petugas', PetugasController::class)
     | BENDEL
     |--------------------------------------------------------------------------
     */
-
     Route::get('/bendel', [BendelController::class, 'index'])
         ->name('bendel.index');
 
@@ -121,7 +113,6 @@ Route::resource('petugas', PetugasController::class)
     | VERIFIKASI
     |--------------------------------------------------------------------------
     */
-
     Route::resource('verifications', VerificationController::class);
 
     /*
@@ -129,8 +120,7 @@ Route::resource('petugas', PetugasController::class)
     | USER MANAGEMENT
     |--------------------------------------------------------------------------
     */
-
-Route::middleware('role:admin')->group(function () {
+    Route::middleware('role:admin')->group(function () {
 
         Route::resource('users', UserController::class);
 
@@ -139,7 +129,6 @@ Route::middleware('role:admin')->group(function () {
         | BACKUP & RESTORE (Admin only)
         |--------------------------------------------------------------------------
         */
-
         Route::get('/backups', [BackupController::class, 'index'])
             ->name('backup.index');
 
@@ -154,15 +143,11 @@ Route::middleware('role:admin')->group(function () {
 
         Route::post('/backups/{filename}/restore', [BackupController::class, 'restore'])
             ->name('backup.restore');
-
     });
 
     Route::get('/admin-test', function () {
-
         return 'Halo Admin SIPADU-DAGANG';
-
     })->middleware('role:admin');
-
 });
 
 require __DIR__.'/auth.php';

@@ -95,7 +95,7 @@ test('UAT 2: dropdown juru pungut berubah sesuai pasar terpilih', function () {
     ];
 
     // Kasus 1 — KARIMATA 1: hanya 3 JP milik karimata yang muncul.
-    $this->getJson(route('api.markets.active-petugas', $karimata))
+    $this->getJson(route('markets.active-petugas', $karimata))
         ->assertOk()
         ->assertJsonCount(3)
         ->assertJsonFragment(['id' => $jpKarimata[0]->id, 'nama' => 'PONIMAN'])
@@ -105,7 +105,7 @@ test('UAT 2: dropdown juru pungut berubah sesuai pasar terpilih', function () {
         ->assertJsonMissing(['id' => $jpDargo[0]->id]);
 
     // Kasus 2 — WARU INDAH: dropdown berubah → hanya JP waru indah.
-    $this->getJson(route('api.markets.active-petugas', $waruIndah))
+    $this->getJson(route('markets.active-petugas', $waruIndah))
         ->assertOk()
         ->assertJsonCount(3)
         ->assertJsonFragment(['id' => $jpWaru[0]->id, 'nama' => 'INDRA SETIAWAN'])
@@ -114,7 +114,7 @@ test('UAT 2: dropdown juru pungut berubah sesuai pasar terpilih', function () {
         ->assertJsonMissing(['id' => $jpDargo[0]->id]);
 
     // Kasus 3 — DARGO: dropdown berubah → hanya JP dargo.
-    $this->getJson(route('api.markets.active-petugas', $dargo))
+    $this->getJson(route('markets.active-petugas', $dargo))
         ->assertOk()
         ->assertJsonCount(2)
         ->assertJsonFragment(['id' => $jpDargo[0]->id, 'nama' => 'MOCH WINARNO'])
