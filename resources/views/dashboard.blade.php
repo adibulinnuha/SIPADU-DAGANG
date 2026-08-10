@@ -1,4 +1,4 @@
-<x-layouts.app title="Dashboard">
+﻿<x-layouts.app title="Dashboard">
 
 @php
     // Helper untuk membangun URL sorting pada Tabel ERET Harian.
@@ -29,7 +29,7 @@
     @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     .pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
 
-    /* ── Spreadsheet ERET ──────────────────────────────── */
+    /* -- Spreadsheet ERET -------------------------------- */
     .eret-scroll {
         overflow: auto;
         max-height: 620px;
@@ -515,12 +515,12 @@ petugasApiUrl: @json(route('markets.active-petugas', ['market' => '__MARKET__'])
                                 @drop.prevent="onDrop(rowIndex)"
                                 @dragend="onDragEnd()"
                                 title="Klik untuk pilih, seret untuk urutkan ulang">
-                                <span class="eret-drag-handle cursor-grab">⠿</span>
+                                <span class="eret-drag-handle cursor-grab">↕</span>
                                 <span x-text="rowIndex + 1"></span>
                             </td>
                             <td @click.stop>
 <select :value="row.market_id"
-                                        @change="onMarketChange(rowIndex, $event)"
+                                        @change="rows[rowIndex].market_id = \$event.target.value"
                                         @dblclick="startEdit(rowIndex, 'market_id')"
                                         :title="cellError(rowIndex, 'market_id') || undefined"
                                         class="eret-select-input" :class="{'is-invalid': cellError(rowIndex, 'market_id')}">
@@ -584,9 +584,9 @@ petugasApiUrl: @json(route('markets.active-petugas', ['market' => '__MARKET__'])
                                     <button type="button" @click="insertRowAt(rowIndex)" title="Sisipkan baris di atas"
                                             class="eret-btn eret-btn-add">+</button>
                                     <button type="button" @click="duplicateRow(rowIndex)" title="Duplikat baris"
-                                            class="eret-btn eret-btn-add">⧉</button>
+                                            class="eret-btn eret-btn-add">+</button>
                                     <button type="button" @click="removeRow(rowIndex, $event)" title="Hapus baris"
-                                            class="eret-btn eret-btn-del">🗑</button>
+                                            class="eret-btn eret-btn-del">Hapus</button>
                                 </div>
                             </td>
                         </tr>
@@ -612,7 +612,7 @@ petugasApiUrl: @json(route('markets.active-petugas', ['market' => '__MARKET__'])
         <div class="border-t border-slate-200 px-6 py-4 dark:border-slate-700">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <p class="text-xs text-slate-500 dark:text-slate-400">
-                    💡 Enter = simpan & pindah ke bawah · Escape = batal · Tab = ke kanan · Shift+Tab = ke kiri · Arrow = navigasi · Ctrl+Enter = isi sel terpilih · Copy/Paste dari Excel didukung
+                    Enter = simpan & pindah ke bawah | Escape = batal | Tab = ke kanan | Shift+Tab = ke kiri | Arrow = navigasi | Ctrl+Enter = isi sel terpilih | Copy/Paste dari Excel didukung
                 </p>
                 <span class="text-sm font-bold text-slate-700 dark:text-slate-200">
                     Grand Total: <span class="text-emerald-600 dark:text-emerald-400" x-text="fmtCell(grandTotal)"></span>
@@ -1052,7 +1052,7 @@ petugasApiUrl: @json(route('markets.active-petugas', ['market' => '__MARKET__'])
 
 @push('scripts')
 <script>
-// ─── Chart.js setup (DOM-dependent) ─────────────────────────
+// --- Chart.js setup (DOM-dependent) -------------------------
 document.addEventListener('DOMContentLoaded', function () {
     const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const gridColor = isDark ? 'rgba(148,163,184,0.1)' : 'rgba(148,163,184,0.2)';
@@ -1143,5 +1143,61 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 @endpush
+```html
+<script>
+function createEretSpreadsheet(config) {
+    return {
+        rows: config.initialRows ?? [],
+        markets: config.markets ?? [],
+        petugasApiUrl: config.petugasApiUrl ?? '',
+        petugasOptions: {},
 
+        async onMarketChange(rowIndex, event) {
+            const marketId = event.target.value;
+
+            this.rows[rowIndex].market_id = marketId;
+            this.rows[rowIndex].petugas_id = '';
+
+            if (!marketId) {
+                this.petugasOptions[rowIndex] = [];
+                return;
+            }
+
+            const url = this.petugasApiUrl.replace('__MARKET__', marketId);
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+
+                this.petugasOptions[rowIndex] = await response.json();
+            } catch (error) {
+                console.error('Gagal memuat petugas:', error);
+                this.petugasOptions[rowIndex] = [];
+            }
+        },
+
+        petugasForRow(rowIndex) {
+            return this.petugasOptions[rowIndex] ?? [];
+        },
+    };
+</script>
+```
+```html
+    ```html
+<script>
 </x-layouts.app>
+
+
+
+
+
+
+
+
+
+
+
