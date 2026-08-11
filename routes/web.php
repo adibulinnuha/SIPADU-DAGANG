@@ -37,6 +37,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/dashboard/eret/save', [EretDashboardController::class, 'save'])
         ->name('dashboard.eret.save');
 
+    Route::get('/dashboard/eret/print/{tanggal}', [EretDashboardController::class, 'print'])
+        ->name('dashboard.eret.print');
+
     /*
     |--------------------------------------------------------------------------
     | OCR e-Ticketing
