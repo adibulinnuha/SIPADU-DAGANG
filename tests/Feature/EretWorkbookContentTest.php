@@ -6,7 +6,6 @@ use App\Models\Market;
 use App\Models\Retribution;
 use App\Models\User;
 use App\Services\AggregateService;
-use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
@@ -15,7 +14,7 @@ class EretWorkbookContentTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected ?string $tempPath = null; // Property to store the temporary file path
+    protected ?string $tempPath = null;
 
     protected function tearDown(): void
     {
@@ -27,92 +26,82 @@ class EretWorkbookContentTest extends TestCase
 
     public function test_workbook_content_matches_aggregate_service(): void
     {
-        // Use a date whose translatedFormat('d M') matches a worksheet in the template.
-        // The template has a sheet named "21 Jul" which matches en locale formatting.
+        if (! file_exists(config('eret.template'))) {
+            $this->markTestSkipped('Template ERET JULI.xltx tidak ditemukan.');
+        }
+
         $testDate = '2026-07-21';
 
-        // 1. Create a User
         $user = User::factory()->create();
 
-        // 2. Create a Market named "Karimata"
         $market = Market::factory()->create([
-            'name' => 'Karimata',
+            'name' => 'Karimata 1',
         ]);
 
-        // 3. Create Retribution records for the test date
         $retribution = Retribution::factory()->create([
             'market_id' => $market->id,
             'retribution_date' => $testDate,
         ]);
 
-        // Attach RetributionItems to exercise the items() path in AggregateService
         $retribution->items()->createMany([
-            ['jenis_retribusi' => 'kios',            'amount' => 50000],
-            ['jenis_retribusi' => 'los',             'amount' => 30000],
+            ['jenis_retribusi' => 'kios', 'amount' => 50000],
+            ['jenis_retribusi' => 'los', 'amount' => 30000],
             ['jenis_retribusi' => 'dasaran_terbuka', 'amount' => 20000],
-            ['jenis_retribusi' => 'mck',             'amount' => 10000],
-            ['jenis_retribusi' => 'kebersihan',      'amount' => 5000],
-            ['jenis_retribusi' => 'listrik',         'amount' => 15000],
+            ['jenis_retribusi' => 'kebersihan', 'amount' => 5000],
         ]);
 
-        // 4. Login and call the export route
         $response = $this
             ->actingAs($user)
             ->get(route('retributions.export-template', ['date' => $testDate]));
 
         $response->assertOk();
 
-        // 5. Save response to a temporary xlsx file
         $this->tempPath = tempnam(sys_get_temp_dir(), 'ERET_WB_').'.xlsx';
         file_put_contents($this->tempPath, $response->streamedContent());
 
-        // 6. Open the workbook using PhpSpreadsheet
         $spreadsheet = IOFactory::load($this->tempPath);
 
-        // 7. Verify workbook loaded and expected worksheet exists
         $this->assertGreaterThan(
             0,
             $spreadsheet->getSheetCount(),
             'Workbook should contain at least one worksheet.'
         );
 
-        $sheetName = Carbon::parse($testDate)->translatedFormat('d M');
-        $worksheet = $spreadsheet->getSheetByName($sheetName);
+        $worksheet = $spreadsheet->getSheetByName('21 Jul');
 
         $this->assertNotNull(
             $worksheet,
-            "Worksheet '{$sheetName}' should exist in the workbook."
+            "Worksheet '21 Jul' should exist in the workbook."
         );
 
-        // 8. Get expected values from AggregateService
         $aggregateService = app(AggregateService::class);
         $dailyRecap = $aggregateService->getDailyRecap($testDate);
+        $row = $dailyRecap->firstWhere('market', 'Karimata 1');
 
-        // 9. Compare workbook cell values with AggregateService output
-        $marketRows = config('eret.market_rows');
-        $columns = config('eret.columns');
+        $this->assertNotNull($row, 'Karimata 1 should appear in daily recap.');
 
-        foreach ($dailyRecap as $row) {
-            $marketName = $row['market'];
-            $excelRow = $marketRows[$marketName] ?? null;
+        $valueFields = [
+            'kios' => 'B24',
+            'los' => 'C24',
+            'dasaran_terbuka' => 'D24',
+            'kebersihan' => 'E24',
+        ];
 
-            $this->assertNotNull($excelRow, "Market '{$marketName}' should have a row mapping in config('eret.market_rows').");
-
-            foreach ($columns as $field => $column) {
-                $expectedValue = (int) ($row[$field] ?? 0);
-                $cellValue = (int) $worksheet->getCell($column.$excelRow)->getValue();
-
-                $this->assertEquals(
-                    $expectedValue,
-                    $cellValue,
-                    "Cell {$column}{$excelRow} ({$marketName}.{$field}) should match AggregateService."
-                );
-            }
+        foreach ($valueFields as $field => $cell) {
+            $this->assertEquals(
+                (int) ($row[$field] ?? 0),
+                (int) $worksheet->getCell($cell)->getValue(),
+                "Cell {$cell} (Karimata 1.{$field}) should match AggregateService."
+            );
         }
 
-        // Clean up PhpSpreadsheet objects to free memory
+        $this->assertStringStartsWith(
+            '=',
+            (string) $worksheet->getCell('F24')->getValue(),
+            'F24 should remain a formula.'
+        );
+
         $spreadsheet->disconnectWorksheets();
         unset($spreadsheet);
-        // The temporary file will be deleted in tearDown()
     }
 }

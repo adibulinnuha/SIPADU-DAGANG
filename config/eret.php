@@ -8,7 +8,20 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'template' => storage_path('app/templates/ERET JULI.xltx'),
+    'template' => env(
+        'ERET_TEMPLATE_PATH',
+        storage_path('app/templates/ERET JULI.xltx')
+    ),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Engine Export Default
+    |--------------------------------------------------------------------------
+    | 'new'    — EretEngine (dynamic mapping, formula protection)
+    | 'legacy' — EretTemplateService (deprecated, transisi Sprint 10)
+    */
+
+    'default_engine' => env('ERET_DEFAULT_ENGINE', 'new'),
 
     /*
     |--------------------------------------------------------------------------

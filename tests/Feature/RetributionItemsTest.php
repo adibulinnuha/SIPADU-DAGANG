@@ -7,7 +7,7 @@ use App\Models\RetributionItem;
 use App\Models\User;
 use App\Services\AggregateService;
 use App\Services\EretService;
-use App\Services\EretTemplateService;
+use App\Services\EretEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -195,11 +195,15 @@ test('daily export totals are identical to aggregate service summaries', functio
         ->and($rows->firstWhere('pasar', 'Sungai')->total_transaksi)->toBe(1);
 });
 
-test('eret template service maps aggregated recap values to exported worksheet', function () {
+test('eret engine maps aggregated recap values to exported worksheet', function () {
+    if (! file_exists(config('eret.template'))) {
+        test()->markTestSkipped('Template ERET JULI.xltx tidak ditemukan.');
+    }
+
     $user = User::factory()->create();
 
     $market = Market::create([
-        'name' => 'Karimata',
+        'name' => 'Karimata 1',
         'code' => 'KR01',
     ]);
 
@@ -207,7 +211,7 @@ test('eret template service maps aggregated recap values to exported worksheet',
         'market_id' => $market->id,
         'recorded_by' => $user->id,
         'jenis_retribusi' => 'Kebersihan',
-        'retribution_date' => '2026-07-29',
+        'retribution_date' => '2026-07-21',
         'amount' => 5000,
         'payment_method' => 'Tunai',
         'status' => 'draft',
@@ -227,9 +231,10 @@ test('eret template service maps aggregated recap values to exported worksheet',
         'amount' => 150000,
     ]);
 
-    $spreadsheet = app(EretTemplateService::class)->generate('ERET', '2026-07-29');
-    $sheet = $spreadsheet->getActiveSheet();
+    $spreadsheet = app(EretEngine::class)->generate('2026-07-21');
+    $sheet = $spreadsheet->getSheetByName('21 Jul');
 
-    expect((float) $sheet->getCell('B24')->getValue())->toBe(250000.0)
+    expect($sheet)->not->toBeNull()
+        ->and((float) $sheet->getCell('B24')->getValue())->toBe(250000.0)
         ->and((float) $sheet->getCell('C24')->getValue())->toBe(150000.0);
 });

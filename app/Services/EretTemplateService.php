@@ -2,71 +2,87 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Collection;
 use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
 class EretTemplateService
 {
-    public function __construct(
-        protected AggregateService $aggregateService
-    ) {}
+    protected string $template;
 
-    /**
-     * Generate spreadsheet from ERET template with daily recap data.
-     *
-     * @param string $sheetName Worksheet name to populate (e.g. "21 Jul")
-     * @param string $date      Date for aggregate data (Y-m-d)
-     *
-     * @throws \RuntimeException When template file is missing
-     */
-    public function generate(string $sheetName, string $date): Spreadsheet
+    protected array $marketRows = [
+        'PASAR KARIMATA' => 6,
+        'PASAR JOHAR' => 7,
+        'PASAR BANGUNHARJO' => 8,
+        'PASAR PEDURUNGAN' => 9,
+    ];
+
+    public function __construct()
     {
-        $template = config('eret.template');
+        $this->template = storage_path('app/templates/ERET JULI.xltx');
 
-        if (! file_exists($template)) {
-            throw new \RuntimeException(
-                'Template ERET tidak ditemukan: '.$template
-            );
+        if (! file_exists($this->template)) {
+            throw new \Exception('Template ERET tidak ditemukan: '.$this->template);
         }
+    }
 
-        $spreadsheet = IOFactory::load($template);
+    public function generate(Collection $retributions, string $date): string
+    {
+        $spreadsheet = IOFactory::load($this->template);
+        $sheet = $spreadsheet->getActiveSheet();
 
-        $sheet = $spreadsheet->getSheetByName($sheetName);
-
-        if ($sheet === null) {
-            Log::warning('Sheet "{name}" tidak ditemukan di template, menggunakan sheet aktif.', [
-                'name' => $sheetName,
-            ]);
-
-            $sheet = $spreadsheet->getActiveSheet();
-        }
-
-        $spreadsheet->setActiveSheetIndex(
-            $spreadsheet->getIndex($sheet)
+        $sheet->setCellValue(
+            'B2',
+            'REKAP ERET TANGGAL '.date('d/m/Y', strtotime($date))
         );
 
-        $marketRows = config('eret.market_rows');
-        $columns = config('eret.columns');
+        foreach ($retributions as $retribution) {
+            $marketName = strtoupper($retribution->market->name ?? '');
 
-        $rows = $this->aggregateService->getDailyRecap($date);
-
-        foreach ($rows as $row) {
-            $excelRow = $marketRows[$row['market']] ?? null;
-
-            if ($excelRow === null) {
+            if (! isset($this->marketRows[$marketName])) {
                 continue;
             }
 
-            $sheet->setCellValue($columns['kios'].$excelRow, $row['kios']);
-            $sheet->setCellValue($columns['los'].$excelRow, $row['los']);
-            $sheet->setCellValue($columns['dasaran_terbuka'].$excelRow, $row['dasaran_terbuka']);
-            $sheet->setCellValue($columns['kebersihan'].$excelRow, $row['kebersihan']);
-            $sheet->setCellValue($columns['mck'].$excelRow, $row['mck']);
-            $sheet->setCellValue($columns['listrik'].$excelRow, $row['listrik']);
-            $sheet->setCellValue($columns['total'].$excelRow, $row['total']);
+           $items = $retribution->items ?? collect();
+$row = $this->marketRows[$marketName];
+
+if ($items->isEmpty()) {
+    // fallback: gunakan total utama jika detail item belum ada
+    $kios = (float) $retribution->amount;
+    $los = 0;
+    $dasaran = 0;
+    $mck = 0;
+    $sampah = 0;
+    $listrik = 0;
+    $total = (float) $retribution->amount;
+} else {
+    $kios = $items->where('type', 'kios')->sum('amount');
+    $los = $items->where('type', 'los')->sum('amount');
+    $dasaran = $items->where('type', 'dasaran')->sum('amount');
+    $mck = $items->where('type', 'mck')->sum('amount');
+    $sampah = $items->where('type', 'sampah')->sum('amount');
+    $listrik = $items->where('type', 'listrik')->sum('amount');
+
+    $total = $kios + $los + $dasaran + $mck + $sampah + $listrik;
+}
+
+            $sheet->setCellValue('C'.$row, $kios);
+            $sheet->setCellValue('D'.$row, $los);
+            $sheet->setCellValue('E'.$row, $dasaran);
+            $sheet->setCellValue('F'.$row, $mck);
+            $sheet->setCellValue('G'.$row, $sampah);
+            $sheet->setCellValue('H'.$row, $listrik);
+            $sheet->setCellValue('I'.$row, $total);
         }
 
-        return $spreadsheet;
+        $filename = 'ERET-'.date('Ymd', strtotime($date)).'.xlsx';
+        $output = storage_path('app/temp/'.$filename);
+
+        if (! is_dir(dirname($output))) {
+            mkdir(dirname($output), 0777, true);
+        }
+
+        IOFactory::createWriter($spreadsheet, 'Xlsx')->save($output);
+
+        return $output;
     }
 }

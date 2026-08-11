@@ -13,11 +13,18 @@
             </p>
         </div>
 
-        <div class="flex gap-2">
-            <a href="{{ route('retributions.export-template') }}"
-               class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-emerald-700">
-                Download ERET JULI
-            </a>
+        <div class="flex flex-wrap items-center gap-2">
+            <form action="{{ route('retributions.export-template') }}" method="GET" class="flex items-center gap-2">
+                <input type="date"
+                       name="date"
+                       value="{{ request('date', now()->toDateString()) }}"
+                       class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                       required />
+                <button type="submit"
+                        class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-emerald-700">
+                    Download ERET
+                </button>
+            </form>
 
             <a href="{{ route('retributions.create') }}"
                class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-blue-700">

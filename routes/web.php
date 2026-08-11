@@ -78,7 +78,7 @@ Route::middleware(['auth'])->group(function () {
     | RETRIBUSI
     |--------------------------------------------------------------------------
     */
-    Route::get('/retributions/export-template', [RetributionsExportController::class, 'template'])
+    Route::get('/retributions/export-template', [RetributionsExportController::class, 'exportTemplate'])
         ->name('retributions.export-template');
 
     Route::get('/retributions/export', [RetributionController::class, 'export'])
